@@ -1,0 +1,774 @@
+\documentclass[11pt]{article}
+
+% Change "review" to "final" to generate the final (sometimes called camera-ready) version.
+% Change to "preprint" to generate a non-anonymous version with page numbers.
+\usepackage[review]{acl}
+
+% Standard package includes
+\usepackage{times}
+\usepackage{latexsym}
+
+% For proper rendering and hyphenation of words containing Latin characters (including in bib files)
+\usepackage[T1]{fontenc}
+% For Vietnamese characters
+% \usepackage[T5]{fontenc}
+% See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
+
+% This assumes your files are encoded as UTF8
+\usepackage[utf8]{inputenc}
+
+% This is not strictly necessary, and may be commented out,
+% but it will improve the layout of the manuscript,
+% and will typically save some space.
+\usepackage{microtype}
+
+% This is also not strictly necessary, and may be commented out.
+% However, it will improve the aesthetics of text in
+% the typewriter font.
+\usepackage{inconsolata}
+
+%Including images in your LaTeX document requires adding
+%additional package(s)
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{colortbl}
+\usepackage[most]{tcolorbox}
+\definecolor{RoyalBlue}{RGB}{65,105,225}
+\colorlet{White}{white}
+\newcommand{\procname}[1]{\textsc{#1}}
+\newcommand{\rubric}{\mathrm{rubric}}
+
+% If the title and author information does not fit in the area allocated, uncomment the following
+%
+%\setlength\titlebox{<dim>}
+%
+% and set <dim> to something 5cm or larger.
+
+\title{Automated Refinement of Essay Scoring Rubrics \\for Language Models via Reflect-and-Revise}
+
+\author{
+ \textbf{Keno Harada},
+ \textbf{Lui Yoshida},
+ \textbf{Takeshi Kojima},
+ \textbf{Yusuke Iwasawa},
+ \textbf{Yutaka Matsuo}
+\\
+The University of Tokyo
+\\
+ \small{
+ \texttt{{keno.harada@weblab.t.u-tokyo.ac.jp}}}
+ }
+
+% Author information can be set in various styles:
+% For several authors from the same institution:
+% \author{Author 1 \and ... \and Author n \\
+%         Address line \\ ... \\ Address line}
+% if the names do not fit well on one line use
+%         Author 1 \\ {\bf Author 2} \\ ... \\ {\bf Author n} \\
+% For authors from different institutions:
+% \author{Author 1 \\ Address line \\  ... \\ Address line
+%         \And  ... \And
+%         Author n \\ Address line \\ ... \\ Address line}
+% To start a separate ``row'' of authors use \AND, as in
+% \author{Author 1 \\ Address line \\  ... \\ Address line
+%         \AND
+%         Author 2 \\ Address line \\ ... \\ Address line \And
+%         Author 3 \\ Address line \\ ... \\ Address line}
+
+%\author{
+%  \textbf{First Author\textsuperscript{1}},
+%  \textbf{Second Author\textsuperscript{1,2}},
+%  \textbf{Third T. Author\textsuperscript{1}},
+%  \textbf{Fourth Author\textsuperscript{1}},
+%\\
+%  \textbf{Fifth Author\textsuperscript{1,2}},
+%  \textbf{Sixth Author\textsuperscript{1}},
+%  \textbf{Seventh Author\textsuperscript{1}},
+%  \textbf{Eighth Author \textsuperscript{1,2,3,4}},
+%\\
+%  \textbf{Ninth Author\textsuperscript{1}},
+%  \textbf{Tenth Author\textsuperscript{1}},
+%  \textbf{Eleventh E. Author\textsuperscript{1,2,3,4,5}},
+%  \textbf{Twelfth Author\textsuperscript{1}},
+%\\
+%  \textbf{Thirteenth Author\textsuperscript{3}},
+%  \textbf{Fourteenth F. Author\textsuperscript{2,4}},
+%  \textbf{Fifteenth Author\textsuperscript{1}},
+%  \textbf{Sixteenth Author\textsuperscript{1}},
+%\\
+%  \textbf{Seventeenth S. Author\textsuperscript{4,5}},
+%  \textbf{Eighteenth Author\textsuperscript{3,4}},
+%  \textbf{Nineteenth N. Author\textsuperscript{2,5}},
+%  \textbf{Twentieth Author\textsuperscript{1}}
+%\\
+%\\
+%  \textsuperscript{1}Affiliation 1,
+%  \textsuperscript{2}Affiliation 2,
+%  \textsuperscript{3}Affiliation 3,
+%  \textsuperscript{4}Affiliation 4,
+%  \textsuperscript{5}Affiliation 5
+%\\
+%  \small{
+%    \textbf{Correspondence:} \href{mailto:email@domain}{email@domain}
+%  }
+%}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+The performance of Large Language Models (LLMs) is highly sensitive to the prompts they are given. Drawing inspiration from the field of prompt optimization, this study investigates the potential for enhancing Automated Essay Scoring (AES) by refining the scoring rubrics used by LLMs. Specifically, our approach prompts models to iteratively refine rubrics by reflecting on models' own scoring rationales and observed discrepancies with human scores on sample essays. 
+\footnote{Optimization and evaluation codes are available at \url{https://anonymous.4open.science/r/ARR2025-1CA3}}
+\end{abstract}
+
+\section{Introduction}
+Automated Essay Scoring (AES) systems powered by Large Language Models (LLMs) are increasingly expected to provide real-time, scalable feedback for students and alleviate the grading burden on instructors~\citep{mizumoto2023aes,yancey-etal-2023-rating,naismith-etal-2023-automated,pack2024validity}. Typically, these systems employ static, pre-defined rubrics to guide the evaluation. However, it remains an open question whether rubrics designed for human raters are optimal for LLMs. When human raters use a rubric, they often engage in a collaborative calibration process: they score sample essays, discuss discrepancies in their judgments, and refine their shared understanding of the criteria to ensure consistency~\citep{trace2016rubricsnegotiate,ozfidan2022rubricdev,ouyang2022instructgpt,yoo-etal-2025-dress}. This iterative, reflective practice is overlooked in current LLM-based AES, potentially limiting their alignment with human scoring patterns.
+
+Recent studies show that LLMs have abilities to refine their own outputs especially when there are reliable external feedback~\citep{madaan2023selfrefine,kamoi2024selfcorrect}. Prompt optimization techniques leverage these capabilities to update prompts to maximize a targeted metric and show performance improvements in various tasks such as multi-hop reasoning, instruction following and privacy-aware delegation~\citep{khattab2023dspy,opsahl-ong-etal-2024-optimizing,agrawal2025gepa}.
+
+Inspired by these developments and the calibration process of human raters, we propose a iterative refinement approach for rubrics in LLM-based AES.
+Specifically, for each model and dataset, using 100 sample essays and scores assigned by human raters, models are prompted to iteratively refine the rubric reflecting on models' own scoring rationales and observed score discrepancies with human scores to mitigate Quadratic Weighted Kappa (QWK) between LLM and human scores. 
+
+Experiments on three datasets (ASAP, ASAP 2.0, and TOEFL11) and three models (\texttt{GPT-5 mini}, \texttt{Qwen3-30B-A3B}, and \texttt{Gemini 3 Flash}) show that iterative rubric refinement can lead to substantial improvements in QWK on some datasets (up to +0.441 on ASAP). Also, we show even from the simplest seed rubric, our method can achieve comparable or better performance than using rubrics written by human experts. However, we also observe that the effectiveness of refinement is dataset- and setting-dependent, with some cases showing performance degradations. These results suggest that while iterative rubric refinement is a promising direction for improving LLM-based AES, it has room for improvement.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/confusion_matrices.pdf}
+\caption{Confusion matrices for Qwen3-30B-A3B with the human expert rubric (top) and our refined rubric (bottom) across three datasets. Cell colors indicate row-normalized proportions; numbers show raw counts. Our refined rubric produces predictions more concentrated along the diagonal, indicating better agreement with human annotations.}
+\label{fig:confusion}
+\end{figure*}
+
+\begin{table*}[t]
+  \centering
+  \small
+  \begin{tabular}{p{2.2cm}ccccc}
+    \toprule
+    \textbf{Study} &
+    \textbf{Human-labeled} &
+    \textbf{Texts being} &
+    \textbf{Source passages used} &
+    \textbf{Model-predicted} &
+    \textbf{Rationales for} \\
+    & \textbf{scores} &
+    \textbf{evaluated} &
+    \textbf{to compose responses} &
+    \textbf{scores} &
+    \textbf{predicted scores} \\
+    \midrule
+    \citet{liu-etal-2024-hd} & $\checkmark$ &  &  &  &  \\
+    \citet{lee-etal-2024-unleashing} &  &  & $\checkmark$ &  &  \\
+    \citet{xie2024gradelikehuman} & $\checkmark$ & $\checkmark$ &  &  &  \\
+    \citet{xu2025activecritics} & $\checkmark$ & $\checkmark$ & $\checkmark$ &  &  \\
+    \citet{liu-etal-2024-calibrating} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  \\
+    \midrule
+    \textbf{Ours} &
+    \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} \\
+    \bottomrule
+  \end{tabular}
+  \caption{Used signals to rewrite or refine evaluation rubrics in prior work vs. ours. Our method uniquely uses all signals, including model-generated rationales for model-predicted scores. \textbf{Texts being evaluated} are the essays/answers/responses that receive scores. \textbf{Source passages used to compose responses} are the reference sentences/passages that the writer must consult when producing the evaluated text (e.g., source documents, provided essay themes). \textbf{Rationales} are models' justifications accompanying model-predicted scores.}
+\label{tab:rubric_rewrite_data_requirements}
+\end{table*}
+
+
+
+\section{Related Work}
+For non-verifiable tasks, where judging success is not as straightforward as in math or code, recent research has focused on LLM-based automatic evaluation using checklists and rubrics in prompts~\citep{min-etal-2023-factscore,qin-etal-2024-infobench,lin2024wildbench,wu-etal-2025-lifbench,cook2025ticking,huang2025rubricanchors,gunjal2025rubricsasrewards,viswanathan2025checklistsbetterrewardmodels,lee2025checkeval,xu2025activecritics,liu-etal-2024-calibrating,liu-etal-2024-hd,wen-etal-2025-hpss}. AES is an example of such a non-verifiable task, and various techniques have been proposed~\citep{mizumoto2023aes,xie2024gradelikehuman,lee-etal-2024-unleashing}.
+
+\subsection{Rubric Design for LLM Evaluation}
+Recent studies suggest that the relationship between rubric design and LLM evaluation quality is not straightforward. \citet{yoshida2025rubrics} found that making rubrics more detailed does not always lead to performance gains in AES: three out of four models maintained similar scoring accuracy with a simplified rubric, and one model even showed decreased performance with more detailed rubrics. Similarly, \citet{furuhashi2025checklist} identified ``negative items,'' rubric components that are valid for human evaluators but do not improve LLM performance, and showed that removing such items can even boost accuracy. These findings suggest that there remains room to find rubric formulations better suited for LLMs.
+
+\subsection{LLM-based Rubric Refinement}
+A growing body of work explores methods for generating or refining evaluation rubrics to improve agreement with human scores~\citep{liu-etal-2024-hd,lee-etal-2024-unleashing,xie2024gradelikehuman,xu2025activecritics,liu-etal-2024-calibrating}. Some methods generate rubrics in a single pass without subsequent revision: for example, generating rubrics from source passages~\citep{lee-etal-2024-unleashing}, from few input--score examples~\citep{xu2025activecritics}, or by rewriting existing rubrics using human-labeled scores and evaluated texts~\citep{xie2024gradelikehuman}. 
+
+Among these, \citet{liu-etal-2024-calibrating} proposed the pipeline closest to ours. Their method samples candidate evaluation criteria from human-scored data, scores a held-out set, and refines the best-performing criteria by analyzing error cases where model scores diverge from human labels. However, their approach differs from ours in two key respects: (1) the refinement loop is executed only once rather than iteratively, and (2) the refinement step does not incorporate the model's chain-of-thought rationales, limiting the diagnostic signal available for rubric revision.
+
+Our method extends this line of work by enabling the LLM to reflect on its own scoring output, including its chain-of-thought rationales, to iteratively refine the rubric. By feeding back not only human-labeled and model-predicted scores but also the model's justifications for those predictions, our approach provides richer diagnostic information for identifying why the current rubric leads to scoring errors. This process effectively mimics the calibration sessions of human evaluators, who refine their interpretations and build shared understanding before formal scoring~\citep{trace2016rubricsnegotiate,ozfidan2022rubricdev,ouyang2022instructgpt,yoo-etal-2025-dress}. Table~\ref{tab:rubric_rewrite_data_requirements} summarizes the signals used for rubric refinement across prior work and our method.
+
+
+\section{Iterative Rubric Refinement}
+\label{sec:method}
+Our method iteratively refines rubric text from score mismatches between LLM predictions and human labels, and model's chain-of-thought rationales. We provide the full algorithm in Appendix~\ref{sec:appendix}.
+
+\subsection{Preliminaries}
+Let \(\mathcal{D}_{\mathrm{train}}=\{(x_i,y_i)\}_{i=1}^{N}\) be the training set, where \(x_i\) is an essay response and \(y_i\) is the corresponding human score. Rubric search starts from an initial seed rubric \(\rubric_0\) (from coarse to detailed variants) and iteratively updates it over \(T\) iterations, maintaining a candidate pool of at most \(K\) rubrics. At each iteration, \(M\) Monte Carlo trials are run per candidate, each drawing error batches of sizes \(b \in \mathcal{B}\).
+
+Given a rubric \(\rubric\), the evaluator LLM scores each training essay \(x_i\), producing a predicted score \(\hat{y}_i\) and a chain-of-thought rationale \(z_i\):
+\begin{equation}
+(\hat{y}_i,\, z_i) = \mathrm{LLM}(\rubric,\, x_i).
+\end{equation}
+We measure rubric quality by Quadratic Weighted Kappa (QWK) between the predicted scores \(\hat{\mathbf{y}}_{\rubric}=(\hat{y}_1,\dots,\hat{y}_N)\) and the human scores \(\mathbf{y}=(y_1,\dots,y_N)\), and seek:
+\begin{equation}
+\rubric_{\mathrm{best}} = \arg\max_{\rubric}\;\mathrm{QWK}(\hat{\mathbf{y}}_{\rubric},\,\mathbf{y}).
+\end{equation}
+For brevity, we hereafter write \(\mathrm{QWK}(\rubric)\) to denote \(\mathrm{QWK}(\hat{\mathbf{y}}_{\rubric},\mathbf{y})\) on the training set. QWK is a standard metric in automated essay scoring for measuring agreement with human raters~\citep{ijcai2019p879}. It is an agreement metric for ordinal labels and penalizes larger score gaps more heavily than smaller ones:
+\begin{equation}
+\mathrm{QWK} = 1 - \frac{\sum_{i,j} w_{ij} O_{ij}}{\sum_{i,j} w_{ij} E_{ij}}, \quad
+w_{ij}=\frac{(i-j)^2}{(L-1)^2},
+\end{equation}
+where \(O_{ij}\) and \(E_{ij}\) are observed and expected confusion counts, and \(L\) is the number of score levels. QWK ranges from \(-1\) to \(1\) and higher QWK is better: \(1\) indicates perfect agreement, \(0\) indicates chance-level agreement, and \(-1\) indicates complete disagreement.
+
+\subsection{Reflect-and-Revise}
+At iteration \(t\), we maintain a candidate pool \(\mathcal{C}_{t-1}\) of size at most \(K\). For each candidate rubric \(\rubric \in \mathcal{C}_{t-1}\), we first score all training samples and collect failed examples:
+\begin{equation}
+\mathcal{E}(\rubric)=\{(x_i,y_i,\hat{y}_i,z_i)\mid \hat{y}_i \neq y_i\}.
+\end{equation}
+
+For each Monte Carlo trial \(m\in\{1,\dots,M\}\) and each batch size \(b \in \mathcal{B}\), we draw a balanced subsample \(\tilde{\mathcal{E}} \subset \mathcal{E}(\rubric)\) of size \(b\), stratified across score levels so that each human-score value is represented as equally as possible. The model then rewrites the rubric by reflecting on the sampled errors and their rationales:
+\begin{equation}
+\rubric' = \procname{ReviseRubric}(\rubric, \tilde{\mathcal{E}}).
+\end{equation}
+Concretely, the revision prompt presents the current rubric together with each error case in \(\tilde{\mathcal{E}}\)---including the essay text, the model's predicted score and rationale, and the human score---and asks the model to identify systematic scoring-error patterns and propose targeted rubric modifications (see Appendix~\ref{sec:appendix_prompts} for the full prompt templates).
+
+\subsection{Iterative Update}
+Let \(\mathcal{N}_t\) be the union of all newly revised rubrics and the previous top candidates \(\mathcal{C}_{t-1}\). Every rubric in \(\mathcal{N}_t\) is re-evaluated on \(\mathcal{D}_{\mathrm{train}}\), and we retain the top \(K\) by QWK:
+\begin{equation}
+\mathcal{C}_t=\mathrm{TopK}_{\rubric\in\mathcal{N}_t}\ \mathrm{QWK}(\rubric).
+\end{equation}
+The global best rubric \(\rubric_{\mathrm{best}}\) is updated only when the best candidate of \(\mathcal{C}_t\) improves over the previous best training QWK. We repeat this process for \(T\) iterations and return \(\rubric_{\mathrm{best}}\).
+
+\section{Experiments}
+\label{sec:experiments}
+
+\subsection{Datasets}
+We evaluate on three essay scoring benchmarks. The Automated Student Assessment Prize (ASAP) dataset~\citep{ben2012asap} consists of student essays from U.S.\ standardized tests; we use essay set~1(P1), which contains persuasive essays scored on an integer scale from 1 to 6 by human raters. ASAP 2.0~\citep{Crossley2025ASAP2} is a corpus of source-based argumentative essays written by U.S.\ secondary students across seven prompts, scored on a 1--6 integer scale with consistent rubrics and accompanying source texts; we use the ``Exploring Venus'' subset in our experiments. The TOEFL11 corpus~\citep{blanchard2013toefl} contains English essays written by non-native speakers across eight essay prompts, labeled at three proficiency levels (high, medium, low). For each dataset, we use 100 training samples for rubric refinement and evaluate on 100 held-out test samples. The expert and simplest seed rubrics of ASAP are provided in Appendix~\ref{sec:appendix_rubrics}.
+
+For TOEFL11, the original rubric defines five proficiency levels (scores 1--5), but the dataset labels use three levels (high, medium, low). We adopt the rubric descriptions for score 4 as \textit{high} (mapped to score 3), score 3 as \textit{medium} (mapped to score 2), and score 2 as \textit{low} (mapped to score 1). 
+
+\subsection{Experimental Setup}
+
+\paragraph{Models}
+We evaluate using three LLMs accessed via the OpenRouter API~\citep{openrouter}: \texttt{GPT-5-mini}~\citep{gpt5}, \texttt{Gemini~3~Flash}~\citep{Google2025GeminiFlash}, and \texttt{Qwen3-Next-80B-A3B-Instruct}~\citep{qwen3-next}. These models span different providers and architectures.
+
+\paragraph{Baselines}
+We compare our Reflect-and-Revise method against two baselines. The first is the \textbf{Human Rubric} baseline, which directly uses the original human-authored rubric without any refinement. The second is \textbf{AutoCalibrate}, which follows AutoCalibrate~\citep{liu-etal-2024-calibrating} in performing a single-pass rubric revision using only score mismatches between model predictions and human labels, without incorporating the model's chain-of-thought rationales. Unlike the original AutoCalibrate, which generates the initial rubric from scratch using an LLM, our implementation initializes from the same human-authored rubric as our method.
+
+\paragraph{Evaluation}
+We report QWK between model predictions and human scores on the held-out test set in a zero-shot setting. We experiment with two seed rubric variants: an \textit{expert} rubric, which is the full human-authored rubric provided with the dataset, and a \textit{simplest} rubric, which is a minimal instruction specifying only the score scale (e.g., ``Based on the response's content, rate the response on a scale of 1 to 6.''). Detailed hyperparameters, including model-specific generation parameters, are provided in Appendix~\ref{sec:appendix_hparams}.
+
+\section{Experimental Results}
+\label{sec:results}
+
+We present the main results with expert seed rubrics (\S\ref{sec:main_results}), results starting from minimal seed rubrics (\S\ref{sec:simplest_seed}), a qualitative analysis of refined rubrics (\S\ref{sec:qualitative}), and a discussion of iterative refinement effects, scoring distributions, and cross-model rubric transferability (\S\ref{sec:discussion}).
+
+\subsection{Main Results}
+\label{sec:main_results}
+
+Table~\ref{tab:asap1} reports zero-shot evaluation results on ASAP P1 with expert seed rubrics; results on ASAP 2.0 and TOEFL11 are provided in Tables~\ref{tab:asap2} and~\ref{tab:toefl} (Appendix~\ref{sec:appendix_full_results}). Bold and underlined values indicate the best and second-best scores for each model, respectively.
+
+\begin{table*}[t]
+\centering
+\begin{tabular}{llrrrrr}
+\toprule
+LLM & Rubric written by & QWK & Accuracy & Spearman & Macro-F1 & MAE \\
+\midrule
+Gemini 3 Flash & Human & 0.427 & \underline{0.404} & 0.568 & \underline{0.307} & \underline{0.697} \\
+Gemini 3 Flash & AutoCalibrate & \underline{0.452} & 0.390 & \underline{0.597} & 0.288 & 0.710 \\
+Gemini 3 Flash & \textbf{Ours} & \textbf{0.576} & \textbf{0.470} & \textbf{0.613} & \textbf{0.330} & \textbf{0.580} \\
+\midrule
+GPT-5 mini & Human & 0.042 & 0.110 & 0.151 & 0.058 & 1.430 \\
+GPT-5 mini & AutoCalibrate & \underline{0.117} & \underline{0.250} & \underline{0.280} & \underline{0.121} & \underline{1.010} \\
+GPT-5 mini & \textbf{Ours} & \textbf{0.430} & \textbf{0.470} & \textbf{0.455} & \textbf{0.284} & \textbf{0.570} \\
+\midrule
+Qwen3-30B-A3B & Human & \underline{0.121} & \underline{0.130} & \underline{0.323} & \underline{0.123} & \underline{1.540} \\
+Qwen3-30B-A3B & AutoCalibrate & 0.073 & 0.110 & 0.217 & 0.076 & 1.620 \\
+Qwen3-30B-A3B & \textbf{Ours} & \textbf{0.213} & \textbf{0.400} & \textbf{0.349} & \textbf{0.234} & \textbf{0.870} \\
+\bottomrule
+\end{tabular}
+\caption{Zero-shot evaluation results on ASAP P1 with expert seed rubrics. Bold and underlined values indicate the best and second-best scores for each model.}
+\label{tab:asap1}
+\end{table*}
+
+On ASAP P1, our method achieves the highest QWK across all three models, with improvements over the human rubric ranging from +0.092 (Qwen3-30B-A3B) to +0.388 (GPT-5 mini). The most notable case is GPT-5 mini, where the human rubric yields near-chance agreement (QWK\,=\,0.042), but our refined rubric raises QWK to 0.430. Our method also consistently outperforms AutoCalibrate, confirming the benefit of iterative refinement with chain-of-thought rationales over single-pass revision without rationales.
+
+On ASAP 2.0 (Table~\ref{tab:asap2}), our method achieves the best QWK for GPT-5 mini (0.466) and Qwen3-30B-A3B (0.664), while AutoCalibrate obtains a slightly higher QWK for Gemini 3 Flash (0.651 vs.\ 0.639). On TOEFL11 (Table~\ref{tab:toefl}), results are more mixed: our method achieves the best QWK only for Qwen3-30B-A3B (0.474), while the human rubric and AutoCalibrate perform better for GPT-5 mini and Gemini 3 Flash, respectively. These results indicate that the effectiveness of iterative rubric refinement varies across datasets. The largest improvements tend to occur when the initial human rubric performs poorly for a given model, suggesting that refinement is most beneficial when the default rubric is poorly calibrated for the target model.
+
+\subsection{Refinement from Minimal Seed Rubrics}
+\label{sec:simplest_seed}
+
+A key practical question is whether rubric refinement can reduce the burden of manual rubric authoring. To investigate this, we apply our method starting from a \textit{simplest} seed rubric and compare the resulting test QWK against the unrefined human expert rubric. Table~\ref{tab:simplest} reports these results.
+
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}llrr@{}}
+\toprule
+\textbf{Dataset} & \textbf{LLM} & \textbf{Simplest} & \textbf{$\Delta$ vs.\ Human} \\
+ & & \textbf{+ Ours} & \textbf{Expert} \\
+\midrule
+ASAP P1 & GPT-5 mini & 0.285 & +0.243 \\
+ & Gemini 3 Flash & 0.556 & +0.129 \\
+ & Qwen3-30B-A3B & 0.442 & +0.322 \\
+\midrule
+ASAP 2.0 & GPT-5 mini & 0.377 & +0.019 \\
+ & Gemini 3 Flash & 0.649 & +0.036 \\
+ & Qwen3-30B-A3B & 0.669 & +0.094 \\
+\midrule
+TOEFL11 & GPT-5 mini & 0.527 & +0.080 \\
+ & Gemini 3 Flash & 0.493 & $-$0.082 \\
+ & Qwen3-30B-A3B & 0.334 & $-$0.030 \\
+\bottomrule
+\end{tabular}
+\caption{QWK comparison: rubrics refined from the simplest seed (``Based on the response's content, rate the response on a scale of 1 to 6.'') vs.\ the rubric written by human experts. $\Delta$ denotes QWK improvement over the Human Expert baseline.}
+\label{tab:simplest}
+\end{table}
+
+On ASAP P1 and ASAP 2.0, rubrics refined from the simplest seed consistently outperform the unrefined human expert rubric across all three models, with improvements up to +0.322 QWK (Qwen3-30B-A3B on ASAP P1). On TOEFL11, results are mixed: GPT-5 mini improves by +0.080, while Gemini 3 Flash and Qwen3-30B-A3B show slight degradations ($-$0.082 and $-$0.030, respectively). Overall, these results demonstrate that our method can, in many settings, recover or exceed the performance of a carefully authored expert rubric starting from only a minimal specification of the score scale. This substantially reduces the need for manual rubric authoring, as the refinement process can automatically discover effective scoring criteria from a small set of labeled examples.
+
+\subsection{Qualitative Analysis of Refined Rubrics}
+\label{sec:qualitative}
+
+To understand how refinement changes rubric content, we examine the rubrics produced by our method on ASAP P1. Figure~\ref{fig:rubric_example} shows representative excerpts from a rubric refined by GPT-5~mini starting from the expert seed (full refined rubric is provided in Appendix~\ref{sec:appendix_refined_rubric}).
+
+Comparison between the original expert rubric and the refined rubric reveals three categories of systematic modifications. First, the refined rubric introduces explicit \textit{general notes} that address common scoring pitfalls, such as instructions not to penalize surface-level errors (spelling and grammar) unless they substantially impede comprehension. Second, the refinement adds concrete \textit{decision rules} for distinguishing adjacent score levels---for example, counting the number of distinct examples and treating brief anecdotes as valid evidence. Third, each score point is supplemented with targeted \textit{rater guidance} that provides specific instructions for boundary cases (e.g., ``if there are only general reasons and the examples are mainly restatements, prefer 3 over 4''). These modifications suggest that the refinement process identifies systematic scoring biases---such as over-penalizing mechanical errors or under-valuing brief anecdotes---and addresses them by making implicit evaluation criteria more explicit and actionable for the model.
+
+\begin{figure*}[t]
+\centering
+\small
+\begin{tcolorbox}[colback=blue!3, colframe=RoyalBlue, title={\textbf{(a) General Notes} --- Cross-cutting guidelines added to the preamble}, fonttitle=\small, fontupper=\scriptsize, left=4pt, right=4pt, top=3pt, bottom=3pt]
+\textit{``Distinguish surface errors (spelling, grammar, typos) from communicative breakdowns. Surface errors are expected and should only lower a score if they substantially impede meaning, coherence, or readability.''}
+\\[2pt]
+\textit{``When in doubt between adjacent scores, use the development and specificity of examples as the primary tiebreaker: more distinct, explained examples $\to$ higher score.''}
+\end{tcolorbox}
+\vspace{3pt}
+\begin{tcolorbox}[colback=green!3, colframe=green!50!black, title={\textbf{(b) Decision Rules} --- Concrete heuristics for distinguishing adjacent scores}, fonttitle=\small, fontupper=\scriptsize, left=4pt, right=4pt, top=3pt, bottom=3pt]
+\textit{``Count distinct examples: 0--1 distinct examples $\to$ less likely than 4; 2--3 distinct examples briefly explained $\to$ 4; 3+ distinct examples with brief explanation across different domains or backed by named anecdotes/studies $\to$ 5.''}
+\\[2pt]
+\textit{``Repetition of the same point with minor variation does not equal multiple elaborations. Distinctness matters: different domains, different types of evidence, or separate illustrative anecdotes count as multiple examples; restatements do not.''}
+\end{tcolorbox}
+\vspace{3pt}
+\begin{tcolorbox}[colback=orange!3, colframe=orange!70!black, title={\textbf{(c) Rater Guidance} --- Per-score-point instructions for boundary cases}, fonttitle=\small, fontupper=\scriptsize, left=4pt, right=4pt, top=3pt, bottom=3pt]
+\textit{Score Point 3 --- ``Assign 3 when the essay shows a clear position and basic organizational structure but lacks adequate, specific development. If there are only general reasons and the examples are mainly restatements or repeats, prefer 3 over 4.''}
+\\[2pt]
+\textit{Score Point 5 --- ``Multiple concrete examples across different domains (e.g., health, environment, social/family) each with brief explanation $\to$ prefer 5 rather than 4. Named anecdotes or brief case reports count as concrete examples when they illustrate the claim.''}
+\end{tcolorbox}
+\caption{Representative excerpts from a rubric refined by GPT-5~mini on ASAP P1 (expert seed), illustrating three categories of modifications: (a)~cross-cutting general notes, (b)~concrete decision rules, and (c)~per-score-point rater guidance. None of these elements appear in the original human-authored rubric.}
+\label{fig:rubric_example}
+\end{figure*}
+
+\subsection{Discussion}
+\label{sec:discussion}
+
+\paragraph{Effect of iterative refinement}
+To analyze the effect of iterative refinement, we track the training QWK of the best candidate rubric at each iteration. Figure~\ref{fig:training_qwk} shows these trajectories for each model on ASAP 2.0. Across all three models, training QWK improves monotonically over iterations, as the selection mechanism retains only the best candidates at each step. The steepest gains occur in the first two iterations, after which the improvements become more gradual. This pattern suggests that early iterations address the most salient scoring errors, while later iterations yield diminishing but still positive returns. Notably, the rate of improvement differs across models: Qwen3-30B-A3B exhibits the largest single-iteration gain, while Gemini 3 Flash shows a more steady progression.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/fig_iterative_refinement_qwk.pdf}
+\caption{Training QWK of the best candidate rubric at each iteration on ASAP 2.0. All models show monotonic improvement, with the steepest gains in early iterations.}
+\label{fig:training_qwk}
+\end{figure*}
+
+\paragraph{Scoring distribution analysis}
+To visualize how rubric refinement changes scoring behavior, Figure~\ref{fig:confusion} shows confusion matrices for Qwen3-30B-A3B with the human expert rubric versus our refined rubric across all three datasets. On ASAP~P1, the human rubric causes severe under-scoring: predictions cluster around scores 2--3 regardless of the true score. Our refined rubric shifts the distribution toward the diagonal, concentrating predictions around score~4---the most frequent true score---and dramatically improving accuracy from 13\% to 40\%. On ASAP~2.0, a similar pattern emerges: the human rubric scatters predictions across scores 1--3, while our rubric aligns predictions with the true score distribution, improving accuracy from 27\% to 51\%. On TOEFL11, the human rubric never predicts the ``High'' category, collapsing all predictions into Low and Medium. Our refined rubric recovers the ability to predict all three levels, improving accuracy from 48\% to 61\%, although some Low-scored essays are misclassified as Medium. These patterns suggest that the primary mechanism of improvement is better calibration of score boundaries to match the target distribution.
+
+\paragraph{Cross-model rubric transferability}
+An important question for practical deployment is whether rubrics optimized for one model can benefit other models. To investigate this, we evaluate rubrics refined by each model on the other two models. Table~\ref{tab:cross_model} shows cross-model QWK for expert-seed rubrics refined with our method.
+
+\begin{table*}[t]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Source $\backslash$ Evaluator} & \textbf{GPT-5 mini} & \textbf{Gemini 3 Flash} & \textbf{Qwen3-30B-A3B} \\
+\multicolumn{4}{l}{\textit{ASAP P1}} \\
+Human & 0.042 & 0.427 & 0.121 \\
+GPT-5 mini & \textbf{\cellcolor{gray!20}0.430} & 0.440 & 0.128 \\
+Gemini 3 Flash & 0.210 & \textbf{\cellcolor{gray!20}0.576} & \textbf{0.524} \\
+Qwen3-30B-A3B & 0.001 & 0.365 & \cellcolor{gray!20}0.213 \\
+\midrule
+\multicolumn{4}{l}{\textit{ASAP 2.0}} \\
+Human & 0.358 & 0.613 & 0.575 \\
+GPT-5 mini & \textbf{\cellcolor{gray!20}0.466} & \textbf{0.688} & 0.199 \\
+Gemini 3 Flash & 0.373 & \cellcolor{gray!20}0.639 & 0.463 \\
+Qwen3-30B-A3B & 0.264 & 0.480 & \textbf{\cellcolor{gray!20}0.664} \\
+\midrule
+\multicolumn{4}{l}{\textit{TOEFL11}} \\
+Human & \textbf{0.447} & \textbf{0.574} & 0.364 \\
+GPT-5 mini & \cellcolor{gray!20}0.329 & 0.460 & 0.316 \\
+Gemini 3 Flash & 0.140 & \cellcolor{gray!20}0.471 & \textbf{0.485} \\
+Qwen3-30B-A3B & 0.055 & 0.461 & \cellcolor{gray!20}0.474 \\
+\bottomrule
+\end{tabular}
+\caption{Cross-model rubric transferability (QWK). Each cell shows QWK when the rubric optimized by the \textit{source} model (row) is used by the \textit{evaluator} model (column). Shaded diagonal cells denote same-model results. ``Human'' row shows the unrefined human rubric baseline. Bold values indicate the best QWK per evaluator model within each dataset.}
+\label{tab:cross_model}
+\end{table*}
+
+The results reveal that transferability is highly asymmetric and dataset-dependent. On ASAP P1, the rubric refined by Gemini 3 Flash yields the best QWK not only for Gemini itself (0.576) but also for Qwen3-30B-A3B (0.524), substantially outperforming Qwen's own refined rubric (0.213). Similarly, on ASAP 2.0, the rubric refined by GPT-5 mini achieves the highest QWK when used by Gemini 3 Flash (0.688), surpassing Gemini's own rubric (0.639). These cases suggest that some models produce rubrics that capture more generalizable scoring criteria. However, the reverse transfers are often ineffective: on ASAP P1, the Qwen-refined rubric yields near-zero QWK for GPT-5 mini (0.001). On TOEFL11, the unrefined human rubric remains the strongest option for GPT-5 mini and Gemini 3 Flash, indicating that refined rubrics can overfit to model-specific scoring patterns on certain datasets. Overall, while cross-model transfer can sometimes be beneficial, rubrics are generally most effective when optimized for the target model.
+
+\section{Conclusion}
+
+We proposed an iterative Reflect-and-Revise approach for refining scoring rubrics in LLM-based automated essay scoring. By prompting models to reflect on their own chain-of-thought rationales and observed score discrepancies with human labels, our method enables targeted rubric revisions that improve alignment with human scoring. Experiments on three datasets and three models demonstrate that our approach yields substantial QWK improvements on ASAP P1 (up to +0.388) and consistent gains on ASAP 2.0, while also showing that rubrics refined from minimal seed specifications can match or exceed human expert rubrics. However, the effectiveness varies across datasets, with limited or negative gains on TOEFL11 for some models. These findings suggest that iterative rubric refinement is a promising direction for reducing manual rubric authoring effort and improving LLM-based AES, while also highlighting the need for future work on preventing overfitting to training distributions and improving cross-dataset robustness.
+
+\bibliography{custom}
+\appendix
+
+\section{Algorithm}
+\label{sec:appendix}
+
+Algorithm~\ref{alg:rubric_refinement} gives the full pseudocode for iterative rubric refinement.
+
+\begin{algorithm*}[t]
+\caption{Iterative Rubric Refinement}
+\label{alg:rubric_refinement}
+\begin{algorithmic}[1]
+\Require Training set $\mathcal{D}_{\mathrm{train}} = \{(x_i, y_i)\}_{i=1}^{N}$, seed rubric $\rubric_0$, iterations $T$, pool size $K$, Monte Carlo trials $M$, batch sizes $\mathcal{B}$, evaluator LLM
+\Ensure Best rubric $\rubric_{\mathrm{best}}$
+\State $\mathcal{C}_0 \gets \{\rubric_0\}$;\; $\rubric_{\mathrm{best}} \gets \rubric_0$;\; $q_{\mathrm{best}} \gets \mathrm{QWK}(\rubric_0)$
+\For{$t = 1$ \textbf{to} $T$}
+    \State $\mathcal{N}_t \gets \emptyset$
+    \For{\textbf{each} $\rubric \in \mathcal{C}_{t-1}$}
+        \State Score all $(x_i,y_i) \in \mathcal{D}_{\mathrm{train}}$ with $\rubric$ $\to$ $(\hat{y}_i, z_i)$
+        \State $\mathcal{E}(\rubric) \gets \{(x_i,y_i,\hat{y}_i,z_i) \mid \hat{y}_i \neq y_i\}$
+        \For{$m = 1$ \textbf{to} $M$}
+            \For{\textbf{each} $b \in \mathcal{B}$}
+                \State $\tilde{\mathcal{E}} \gets \procname{BalancedSample}(\mathcal{E}(\rubric),\, b)$
+                % \Comment{Stratified by score level}
+                \State $\rubric' \gets \procname{ReviseRubric}(\rubric,\, \tilde{\mathcal{E}})$
+                % \Comment{LLM revises rubric}
+                \State $\mathcal{N}_t \gets \mathcal{N}_t \cup \{\rubric'\}$
+            \EndFor
+        \EndFor
+    \EndFor
+    \State $\mathcal{N}_t \gets \mathcal{N}_t \cup \mathcal{C}_{t-1}$
+    % \Comment{Retain previous top candidates}
+    \State Re-evaluate all $\rubric \in \mathcal{N}_t$ on $\mathcal{D}_{\mathrm{train}}$
+    \State $\mathcal{C}_t \gets \mathrm{TopK}_{\rubric \in \mathcal{N}_t}\;\mathrm{QWK}(\rubric)$
+    \If{$\max_{\rubric \in \mathcal{C}_t} \mathrm{QWK}(\rubric) > q_{\mathrm{best}}$}
+        \State $\rubric_{\mathrm{best}} \gets \arg\max_{\rubric \in \mathcal{C}_t} \mathrm{QWK}(\rubric)$;\; $q_{\mathrm{best}} \gets \mathrm{QWK}(\rubric_{\mathrm{best}})$
+    \EndIf
+\EndFor
+\State \Return $\rubric_{\mathrm{best}}$
+\end{algorithmic}
+\end{algorithm*}
+
+\procname{BalancedSample}$(\mathcal{E}, b)$ partitions the error set $\mathcal{E}$ into buckets by human-score level, then draws $\lfloor b / L' \rfloor$ examples from each bucket (where $L'$ is the number of non-empty buckets), ensuring that each score level is represented as equally as possible.
+
+\section{Prompt Templates}
+\label{sec:appendix_prompts}
+
+This section lists the exact prompt templates used in our pipeline. Placeholders enclosed in braces (e.g., \texttt{\{rubric\}}) are filled at runtime.
+
+\subsection{Evaluation Prompt}
+\label{sec:eval_prompt}
+The following prompt is used to score each essay with the current rubric. The LLM is instructed to output a rationale followed by an integer score.
+
+\begin{tcolorbox}[colback=white, colframe=RoyalBlue, title=Evaluation Prompt, fonttitle=\bfseries\small, fontupper=\small, breakable]
+You are an expert rater for a high-stakes English writing exam for second-language learners.
+Evaluate the response strictly using the scoring guideline. Choose exactly one score from the scoring guideline's score points.
+
+\texttt{\# Essay Prompt}\\
+\texttt{"""\{essay\_prompt\}"""}
+
+\texttt{\# Response}\\
+\texttt{"""\{response\}"""}
+
+\texttt{\# Scoring Guideline}\\
+\texttt{"""\{rubric\}"""}
+
+\texttt{\# Output format (follow exactly)}\\
+\texttt{Rationale: [<<<Brief evidence-based rationale.>>>]}\\
+\texttt{Rating: [<<<One integer score only.>>>]}
+\end{tcolorbox}
+
+\subsection{Error-Case Format for Rubric Revision}
+\label{sec:error_format}
+For each incorrectly scored example fed into the revision prompt, the following format is used to present the error case to the model. When rationales are included (\texttt{with\_rationale=True}), the model's chain-of-thought is shown alongside its predicted score.
+
+\begin{tcolorbox}[colback=white, colframe=RoyalBlue, title=Error-Case Format (with rationale), fonttitle=\bfseries\small, fontupper=\small, breakable]
+\texttt{Assistant input:}\\
+\texttt{Essay prompt:}\\
+\texttt{"""\{essay\_prompt\}"""}\\
+\texttt{Essay to be rated:}\\
+\texttt{"""\{response\}"""}\\
+\texttt{Assistant rationale:}\\
+\texttt{"""\{rationale\}"""}\\
+\texttt{Assistant score:}\\
+\texttt{"""\{rating\}"""}\\
+\texttt{Desired score:}\\
+\texttt{"""\{desired\_rating\}"""}
+\end{tcolorbox}
+
+\subsection{Rubric Revision Prompt}
+\label{sec:revision_prompt}
+The revision prompt wraps the current rubric and the sampled error cases, and instructs the model to output a revised rubric.
+
+\begin{tcolorbox}[colback=white, colframe=RoyalBlue, title=Rubric Revision Prompt (with rationale), fonttitle=\bfseries\small, fontupper=\small, breakable]
+I asked an assistant to grade essays using the scoring guideline below:
+
+\texttt{```}\\
+\texttt{\{current\_rubric\}}\\
+\texttt{```}
+
+Here are grading examples that include the assistant input, the assistant rationale, the assistant score, and the desired score:
+
+\texttt{```}\\
+\texttt{\{examples\}}\\
+\texttt{```}
+
+Revise the scoring guideline to improve score agreement so the assistant's future ratings align more closely with the desired scores.
+
+Requirements:\\
+1. Use the rationale patterns to identify why the assistant over-scored or under-scored, and improve the scoring guideline guidance accordingly to reduce score mismatches.
+
+Output rules:\\
+-- Return only the revised scoring guideline.\\
+-- Use exactly one fenced code block with triple backticks.\\
+-- Do not include any text before or after the code block.
+\end{tcolorbox}
+
+When rationales are not used (\texttt{with\_rationale=False}), the error-case format omits the \texttt{Assistant rationale} field, and the requirement in the revision prompt is replaced with: ``Use score mismatch patterns to identify where the scoring guideline guidance is insufficient or ambiguous, and revise it to reduce score mismatches.''
+
+\section{Hyperparameters}
+\label{sec:appendix_hparams}
+
+Table~\ref{tab:hyperparams} summarizes the optimization hyperparameters. Our Reflect-and-Revise method runs for $T{=}5$ iterations with rationale-based feedback, while the AutoCalibrate baseline uses $T{=}1$ without rationales. Both methods maintain $K{=}3$ top candidates, use Monte Carlo trials $M{=}1$, error batch sizes $\mathcal{B}{=}\{4,8,12\}$, and $N{=}100$ training samples.
+
+\begin{table}[h]
+  \centering
+  \small
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Hyperparameter} & \textbf{Ours} & \textbf{AutoCalibrate} \\
+    \midrule
+    Iterations ($T$) & 5 & 1 \\
+    Top-$K$ candidates & 3 & 3 \\
+    Monte Carlo trials ($M$) & 1 & 1 \\
+    Batch sizes ($\mathcal{B}$) & \{4, 8, 12\} & \{4, 8, 12\} \\
+    Training samples ($N$) & 100 & 100 \\
+    With rationale & Yes & No \\
+    \bottomrule
+  \end{tabular}
+  \caption{Optimization hyperparameters for rubric refinement.}
+  \label{tab:hyperparams}
+\end{table}
+
+For all models, we set the maximum output tokens to 8192. For GPT-5-mini and Gemini 3 Flash, we set reasoning effort to low. All other generation parameters were left at their default values for each model.
+
+
+\section{Full Results on ASAP 2.0 and TOEFL11}
+\label{sec:appendix_full_results}
+
+\begin{table*}[t]
+\centering
+\begin{tabular}{llrrrrr}
+\toprule
+LLM & Rubric written by & QWK & Accuracy & Spearman & Macro-F1 & MAE \\
+\midrule
+Gemini 3 Flash & Human & 0.613 & 0.440 & \underline{0.657} & 0.270 & 0.610 \\
+Gemini 3 Flash & AutoCalibrate & \textbf{0.651} & \underline{0.490} & \textbf{0.697} & \underline{0.308} & \textbf{0.540} \\
+Gemini 3 Flash & \textbf{Ours} & \underline{0.639} & \textbf{0.530} & 0.653 & \textbf{0.388} & \underline{0.550} \\
+\midrule
+GPT-5 mini & Human & \underline{0.358} & \underline{0.350} & \textbf{0.533} & 0.148 & \underline{0.780} \\
+GPT-5 mini & AutoCalibrate & 0.277 & \textbf{0.370} & \underline{0.471} & \underline{0.148} & 0.820 \\
+GPT-5 mini & \textbf{Ours} & \textbf{0.466} & \textbf{0.370} & 0.458 & \textbf{0.190} & \textbf{0.710} \\
+\midrule
+Qwen3-30B-A3B & Human & \underline{0.575} & \underline{0.270} & \textbf{0.668} & \underline{0.272} & \underline{0.890} \\
+Qwen3-30B-A3B & AutoCalibrate & 0.544 & \underline{0.270} & 0.577 & 0.259 & 0.950 \\
+Qwen3-30B-A3B & \textbf{Ours} & \textbf{0.664} & \textbf{0.510} & \underline{0.657} & \textbf{0.381} & \textbf{0.610} \\
+\bottomrule
+\end{tabular}
+\caption{Zero-shot evaluation results on ASAP 2.0 with expert seed rubrics.}
+\label{tab:asap2}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\begin{tabular}{llrrrrr}
+\toprule
+LLM & Rubric written by & QWK & Accuracy & Spearman & Macro-F1 & MAE \\
+\midrule
+Gemini 3 Flash & Human & \underline{0.574} & \underline{0.690} & \underline{0.576} & 0.244 & 0.700 \\
+Gemini 3 Flash & AutoCalibrate & \textbf{0.597} & 0.680 & \textbf{0.648} & \textbf{0.636} & \underline{0.320} \\
+Gemini 3 Flash & \textbf{Ours} & 0.471 & \textbf{0.710} & 0.513 & \underline{0.565} & \textbf{0.290} \\
+\midrule
+GPT-5 mini & Human & \textbf{0.447} & \textbf{0.680} & \underline{0.434} & 0.165 & 0.900 \\
+GPT-5 mini & AutoCalibrate & \underline{0.419} & 0.620 & \textbf{0.482} & \textbf{0.542} & \underline{0.410} \\
+GPT-5 mini & \textbf{Ours} & 0.329 & \underline{0.670} & 0.361 & \underline{0.483} & \textbf{0.350} \\
+\midrule
+Qwen3-30B-A3B & Human & 0.364 & 0.470 & \underline{0.471} & 0.344 & 0.530 \\
+Qwen3-30B-A3B & AutoCalibrate & \underline{0.428} & \underline{0.570} & 0.454 & \underline{0.533} & \underline{0.460} \\
+Qwen3-30B-A3B & \textbf{Ours} & \textbf{0.474} & \textbf{0.610} & \textbf{0.480} & \textbf{0.540} & \textbf{0.390} \\
+\bottomrule
+\end{tabular}
+\caption{Zero-shot evaluation results on TOEFL11 with expert seed rubrics.}
+\label{tab:toefl}
+\end{table*}
+
+\section{Seed Rubrics}
+\label{sec:appendix_rubrics}
+
+This section lists the expert (human-authored) and simplest seed rubrics of the ASAP dataset used in our experiments. The expert rubric is the original human-authored rubric provided with the dataset, while the simplest rubric is a minimal description specifying only the score scale.
+
+\subsection{Expert rubric}
+
+\begin{tcolorbox}[colback=white, colframe=gray, fontupper=\small, breakable]
+Score Point 1: An undeveloped response that may take a position but offers no more than very minimal support. Typical elements:
+- Contains few or vague details.
+- Is awkward and fragmented.
+- May be difficult to read and understand.
+- May show no awareness of audience.
+
+Score Point 2: An under-developed response that may or may not take a position. Typical elements:
+- Contains only general reasons with unelaborated and/or list-like details.
+- Shows little or no evidence of organization.
+- May be awkward and confused or simplistic.
+- May show little awareness of audience.
+
+Score Point 3: A minimally-developed response that may take a position, but with inadequate support and details. Typical elements:
+- Has reasons with minimal elaboration and more general than specific details.
+- Shows some organization.
+- May be awkward in parts with few transitions.
+- Shows some awareness of audience.
+
+Score Point 4: A somewhat-developed response that takes a position and provides adequate support. Typical elements:
+- Has adequately elaborated reasons with a mix of general and specific details.
+- Shows satisfactory organization.
+- May be somewhat fluent with some transitional language.
+- Shows adequate awareness of audience.
+
+Score Point 5: A developed response that takes a clear position and provides reasonably persuasive support. Typical elements:
+- Has moderately well elaborated reasons with mostly specific details.
+- Exhibits generally strong organization.
+- May be moderately fluent with transitional language throughout.
+- May show a consistent awareness of audience.
+
+Score Point 6: A well-developed response that takes a clear and thoughtful position and provides persuasive support. Typical elements:
+- Has fully elaborated reasons with specific details.
+- Exhibits strong organization.
+- Is fluent and uses sophisticated transitional language.
+- May show a heightened awareness of audience.
+
+Note: 
+I have made an effort to remove personally identifying information from the essays using the Named Entity Recognizer (NER). The relevant entities are identified in the text and then replaced with a string such as "PERSON", "ORGANIZATION", "LOCATION", "DATE", "TIME", "MONEY", "PERCENT", "CAPS" (any capitalized word) and "NUM" (any digits). Please do not penalize the essay because of the anonymizations.
+\end{tcolorbox}
+
+\subsection{Simplest rubric}
+
+\begin{tcolorbox}[colback=white, colframe=gray, fontupper=\small]
+Based on the response\'s content, rate the response on a scale of 1 to 6.
+\end{tcolorbox}
+
+\subsection{Refined rubric (GPT-5~mini, ASAP P1, expert seed)}
+\label{sec:appendix_refined_rubric}
+
+The following is the full text of the rubric refined by GPT-5~mini on ASAP P1 starting from the expert seed rubric, corresponding to the excerpts shown in Figure~\ref{fig:rubric_example}.
+
+\begin{tcolorbox}[colback=white, colframe=gray, fontupper=\small, breakable]
+Revised Scoring Guideline (with added clarifications to improve rater alignment and reduce common mismatches)
+
+\textbf{General notes} (apply to all scores)
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\item Do not penalize anonymization (PERSON, ORGANIZATION, LOCATION, DATE, TIME, MONEY, PERCENT, CAPS, NUM).
+\item Distinguish surface errors (spelling, grammar, typos) from communicative breakdowns. Surface errors are expected and should only lower a score if they substantially impede meaning, coherence, or readability.
+\item Consider four core dimensions when placing a response: Position/claim clarity, Development/Specificity of support, Organization/Coherence/Transitions, and Readability/Fluency. A single weak dimension can lower score by at most one point unless it causes major incomprehensibility.
+\item Use ``examples'' to mean concrete, specific instances, anecdotes, or explained scenarios---not mere lists of general categories.
+\item When in doubt between adjacent scores, use the development and specificity of examples as the primary tiebreaker: more distinct, explained examples $\to$ higher score.
+\end{itemize}
+
+\textbf{New guidance to address recurring rater mismatches}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\item Treat brief anecdotes or named personal examples (e.g., ``my neighbor,'' ``a study found,'' short story about a person) as concrete examples even when they are imperfectly written or poorly sourced. Such examples should count toward the essay's level of development, so long as they are distinct and clearly connected to the claim.
+\item Multiple concrete examples that are each briefly explained (even if explanations are awkward or contain errors) should generally move a response up one score level relative to essays that only list general reasons. Specifically: multiple distinct examples + brief explanations $\to$ prefer 5 over 4; multiple named anecdotes/examples across domains $\to$ prefer 5 over 4.
+\item Repetition of the same point with minor variation does not equal multiple elaborations. Distinctness matters: different domains, different types of evidence, or separate illustrative anecdotes count as multiple examples; restatements do not.
+\item Poor mechanics/surface errors alone should not prevent an essay from earning 4 or 5 if the claim, organization, and development meet those criteria. Reserve downgrades for errors only when they create frequent confusion or break comprehension.
+\item Organization: Even basic intro/body/conclusion structure with clear grouping of reasons should satisfy the ``organization'' requirement for scores 3--5. Only very fragmented or missing structure should lead to a 1 or 2.
+\end{itemize}
+
+\textbf{Score Point 1:} Undeveloped / Minimal communicative content\\
+Typical elements (choose 1--3 to justify a 1):
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\item Takes little or no defensible position, or the position is incomprehensible.
+\item Contains extremely few details or only vague, fragmentary statements.
+\item Organization is absent; writing may be so fragmented it is difficult to follow.
+\item Errors seriously impede understanding.
+\end{itemize}
+Rater guidance: Assign 1 when the essay provides almost no development and the reader cannot follow an argument beyond a bare claim.
+
+\textbf{Score Point 2:} Under-developed / General or list-like reasons only\\
+Typical elements (choose 2--4 to justify a 2):
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\item May take a position, but support consists primarily of general assertions or list-like reasons with little to no elaboration.
+\item Little or no effective organization; ideas may be loosely connected.
+\item Language is often awkward or confused; errors frequent but meaning largely recoverable.
+\item No real attempt at addressing counterarguments or providing specific examples.
+\end{itemize}
+Rater guidance: Use 2 for responses that go beyond fragments but still present primarily undeveloped, general claims with minimal cohesion.
+
+\textbf{Score Point 3:} Minimally developed / Some organization, minimal elaboration\\
+Typical elements (choose 2--4 to justify a 3):
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\item Takes a position and supplies one or more reasons, but elaboration is minimal and details are mostly general rather than specific.
+\item Shows some organization (intro, body, conclusion or paragraphing) though transitions may be weak and sequencing simplistic.
+\item Examples, if present, are few, repetitive, or only loosely connected to claims (e.g., listing benefits without explanation).
+\item Errors and awkward phrasing are evident but do not severely block comprehension.
+\end{itemize}
+Rater guidance: Assign 3 when the essay shows a clear position and basic organizational structure but lacks adequate, specific development. If there are only general reasons and the examples are mainly restatements or repeats, prefer 3 over 4. A couple of short, distinct examples with almost no explanation can still be 3; require at least brief explanation to move above 3.
+
+\textbf{Score Point 4:} Somewhat developed / Adequate support and organization\\
+Typical elements (choose 3--5 to justify a 4):
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\item Takes a clear position and provides adequately elaborated reasons with a mix of general and specific details.
+\item Presents multiple distinct supporting points and at least some specific examples or brief explanations (e.g., named applications, short anecdotes, simple illustrative scenarios).
+\item Organization is satisfactory: logical sequence, basic use of transitions, and paragraphs that group ideas.
+\item Fluency is moderate; errors present but do not significantly impede persuasiveness or clarity.
+\item May briefly acknowledge or respond to a counterargument or limitation.
+\end{itemize}
+Rater guidance: Use 4 when the response is reasonably persuasive and shows adequate breadth of support with at least some specific examples or short elaborations---even if surface errors or awkwardness are frequent. If the essay offers several reasons with a few concrete examples but the examples are not well explained or are uneven in quality, score 4. If organization is weak but there are multiple specific examples with some explanation, prefer 4 over 3.
+
+\textbf{Score Point 5:} Developed / Clear position with persuasive, specific support\\
+Typical elements (choose 3--5 to justify a 5):
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\item Takes a clear, consistent position and provides reasonably persuasive support with mostly specific details and concrete examples.
+\item Reasons are moderately well elaborated: cause/effect, implications, or examples explained beyond mere mention.
+\item Organization is strong: clear progression of ideas, reasonably consistent paragraph structure, and functional transitions.
+\item Writing is generally fluent; surface errors are present but do not hinder persuasiveness or clarity.
+\item May include a limited but relevant counterargument and rebuttal.
+\end{itemize}
+Rater guidance: Assign 5 when the essay offers multiple distinct, concrete examples that are explained or linked to the claim, has clear logical organization, and is persuasive overall despite some errors. Multiple concrete examples across different domains (e.g., health, environment, social/family) each with brief explanation $\to$ prefer 5 rather than 4. Named anecdotes or brief case reports count as concrete examples when they illustrate the claim and are connected to the reasoning.
+
+\textbf{Score Point 6:} Well-developed / Thoughtful, persuasive, and fluent\\
+Typical elements (choose 3--5 to justify a 6):
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\item Takes a clear and thoughtful position and provides fully elaborated reasons with specific, vivid details and well-chosen examples.
+\item Exhibits strong organization and coherence: effective introduction, logically developed paragraphs, clear transitions, and a persuasive conclusion.
+\item Writing is fluent and displays sophisticated use of language; errors are rare and do not distract.
+\item Demonstrates heightened awareness of audience and purpose (tone, rhetorical devices, effective counterargument/refutation).
+\end{itemize}
+Rater guidance: Reserve 6 for essays that are persuasive and mature in thought and expression---detailed, well-explained examples, clear reasoning, and strong control of language.
+
+\textbf{Additional decision rules to reduce inconsistency}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\item Count distinct examples: 0--1 distinct examples $\to$ less likely than 4; 2--3 distinct examples briefly explained $\to$ 4; 3+ distinct examples with brief explanation across different domains or backed by named anecdotes/studies $\to$ 5.
+\item Distinctness beats quantity: three distinct, separate examples (different domains or different types of evidence) that are each at least briefly explained should lift an essay to 5 even if writing is error-prone.
+\item Repetition detection: if support is largely the same point repeated (e.g., ``computers cause obesity'' restated many times with minor wording changes), do not count as multiple elaborations.
+\item Anecdotes: treat properly connected anecdotes as evidence. If an essay includes several personal or named anecdotes that illustrate separate facets of the claim, these count toward higher development.
+\item Organization vs.\ development: When organization is weak but multiple specific, relevant examples are present and explained, prefer 4 or 5 (depending on number/explainedness) rather than 3.
+\item Surface errors: Frequent mechanical errors by themselves should not block a 4 or 5. Downgrade more for error-driven incomprehensibility than for presence of many errors alone.
+\item When uncertain between 3 and 4: ask whether there are any concrete or named examples that go beyond mere lists. If yes $\to$ 4. When uncertain between 4 and 5: count distinct, explained examples across domains; 3+ $\to$ 5.
+\end{itemize}
+
+Illustrative heuristics (short mapping):
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\item Score 3 $\to$ clear claim + several general reasons, little elaboration, weak transitions (e.g., listing benefits or harms with minimal examples).
+\item Score 4 $\to$ clear claim + multiple reasons with at least some specific examples or brief illustrations and satisfactory organization; persuasive but not consistently developed.
+\item Score 5 $\to$ clear, persuasive claim + multiple distinct, specific examples that are explained and connected to the thesis; strong organization; readers are likely convinced.
+\end{itemize}
+\end{tcolorbox}
+
+
+\end{document}

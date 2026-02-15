@@ -1,0 +1,28 @@
+\begin{table*}[t]
+\centering
+\small
+\caption{Cross-model rubric transferability (QWK). Each cell shows QWK when the rubric optimized by the \textit{source} model (row) is used by the \textit{evaluator} model (column). Shaded diagonal cells denote same-model results. ``Human'' row shows the unrefined human rubric baseline. Bold values indicate the best QWK per evaluator model within each dataset.}
+\label{tab:cross_model}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Source $\backslash$ Evaluator} & \textbf{GPT-5 mini} & \textbf{Gemini 3 Flash} & \textbf{Qwen3-30B-A3B} \\
+\multicolumn{4}{l}{\textit{ASAP P1}} \\
+Human & 0.042 & 0.427 & 0.121 \\
+GPT-5 mini & \textbf{\cellcolor{gray!20}0.430} & 0.440 & 0.128 \\
+Gemini 3 Flash & 0.210 & \textbf{\cellcolor{gray!20}0.576} & \textbf{0.524} \\
+Qwen3-30B-A3B & 0.001 & 0.365 & \cellcolor{gray!20}0.213 \\
+\midrule
+\multicolumn{4}{l}{\textit{ASAP 2.0}} \\
+Human & 0.358 & 0.613 & 0.575 \\
+GPT-5 mini & \textbf{\cellcolor{gray!20}0.466} & \textbf{0.688} & 0.199 \\
+Gemini 3 Flash & 0.373 & \cellcolor{gray!20}0.639 & 0.463 \\
+Qwen3-30B-A3B & 0.264 & 0.480 & \textbf{\cellcolor{gray!20}0.664} \\
+\midrule
+\multicolumn{4}{l}{\textit{TOEFL11}} \\
+Human & \textbf{0.447} & \textbf{0.574} & 0.364 \\
+GPT-5 mini & \cellcolor{gray!20}0.329 & 0.460 & 0.316 \\
+Gemini 3 Flash & 0.140 & \cellcolor{gray!20}0.471 & \textbf{0.485} \\
+Qwen3-30B-A3B & 0.055 & 0.461 & \cellcolor{gray!20}0.474 \\
+\bottomrule
+\end{tabular}
+\end{table*}
