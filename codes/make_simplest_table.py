@@ -12,7 +12,7 @@ KNOWN_VENDORS = ("openai", "google", "qwen")
 
 MODEL_LABELS = {
     "openai/gpt-5-mini": "GPT-5 mini",
-    "qwen/qwen3-next-80b-a3b-instruct": "Qwen3-30B-A3B",
+    "qwen/qwen3-next-80b-a3b-instruct": "Qwen3-80B-A3B",
     "google/gemini-3-flash-preview": "Gemini 3 Flash",
 }
 

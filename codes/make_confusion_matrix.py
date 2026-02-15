@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate confusion matrix heatmaps: Human Expert Rubric vs Ours for Qwen3-30B-A3B."""
+"""Generate confusion matrix heatmaps: Human Expert Rubric vs Ours for Qwen3-80B-A3B."""
 import argparse
 import json
 import sys

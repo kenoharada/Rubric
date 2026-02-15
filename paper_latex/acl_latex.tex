@@ -120,24 +120,29 @@ The University of Tokyo
 \begin{document}
 \maketitle
 \begin{abstract}
-The performance of Large Language Models (LLMs) is highly sensitive to the prompts they are given. Drawing inspiration from the field of prompt optimization, this study investigates the potential for enhancing Automated Essay Scoring (AES) by refining the scoring rubrics used by LLMs. Specifically, our approach prompts models to iteratively refine rubrics by reflecting on models' own scoring rationales and observed discrepancies with human scores on sample essays. 
-\footnote{Optimization and evaluation codes are available at \url{https://anonymous.4open.science/r/ARR2025-1CA3}}
+Large Language Models (LLMs) are increasingly used for Automated Essay Scoring (AES), yet the scoring rubrics they rely on are typically designed for human raters and may not be optimal for LLMs. Inspired by the calibration process that human raters undergo before formal scoring, we propose Reflect-and-Revise, an iterative framework that refines scoring rubrics by prompting models to reflect on their own chain-of-thought rationales and observed score discrepancies with human labels. At each iteration, the model identifies systematic scoring error patterns from sampled mismatches and revises the rubric accordingly. Experiments on three essay scoring benchmarks (ASAP, ASAP 2.0, and TOEFL11) with three LLMs (GPT-5 mini, Gemini 3 Flash, and Qwen3-80B-A3B) show that our method yields substantial improvements in Quadratic Weighted Kappa (QWK), with gains of up to +0.388 over human-authored rubrics on ASAP. Furthermore, starting from a minimal seed rubric that specifies only the score scale, our method can match or exceed the performance of carefully authored expert rubrics in most settings. However, the effectiveness of refinement varies across datasets, with limited gains on TOEFL11 for some models. Our findings demonstrate the potential of iterative rubric refinement for improving LLM-based AES while reducing the burden of manual rubric authoring.\footnote{Optimization and evaluation codes are available at \url{https://anonymous.4open.science/r/ARR2025-1CA3}}
 \end{abstract}
 
 \section{Introduction}
 Automated Essay Scoring (AES) systems powered by Large Language Models (LLMs) are increasingly expected to provide real-time, scalable feedback for students and alleviate the grading burden on instructors~\citep{mizumoto2023aes,yancey-etal-2023-rating,naismith-etal-2023-automated,pack2024validity}. Typically, these systems employ static, pre-defined rubrics to guide the evaluation. However, it remains an open question whether rubrics designed for human raters are optimal for LLMs. When human raters use a rubric, they often engage in a collaborative calibration process: they score sample essays, discuss discrepancies in their judgments, and refine their shared understanding of the criteria to ensure consistency~\citep{trace2016rubricsnegotiate,ozfidan2022rubricdev,ouyang2022instructgpt,yoo-etal-2025-dress}. This iterative, reflective practice is overlooked in current LLM-based AES, potentially limiting their alignment with human scoring patterns.
 
-Recent studies show that LLMs have abilities to refine their own outputs especially when there are reliable external feedback~\citep{madaan2023selfrefine,kamoi2024selfcorrect}. Prompt optimization techniques leverage these capabilities to update prompts to maximize a targeted metric and show performance improvements in various tasks such as multi-hop reasoning, instruction following and privacy-aware delegation~\citep{khattab2023dspy,opsahl-ong-etal-2024-optimizing,agrawal2025gepa}.
+Recent studies show that LLMs have the ability to refine their own outputs especially when there is reliable external feedback~\citep{madaan2023selfrefine,kamoi2024selfcorrect}. Prompt optimization techniques leverage these capabilities to update prompts to maximize a targeted metric and show performance improvements in various tasks such as multi-hop reasoning, instruction following and privacy-aware delegation~\citep{khattab2023dspy,opsahl-ong-etal-2024-optimizing,agrawal2025gepa}.
 
-Inspired by these developments and the calibration process of human raters, we propose a iterative refinement approach for rubrics in LLM-based AES.
-Specifically, for each model and dataset, using 100 sample essays and scores assigned by human raters, models are prompted to iteratively refine the rubric reflecting on models' own scoring rationales and observed score discrepancies with human scores to mitigate Quadratic Weighted Kappa (QWK) between LLM and human scores. 
+Inspired by these developments and the calibration process of human raters, we propose an iterative Reflect-and-Revise approach for refining rubrics in LLM-based AES.
+Specifically, given a small set of 100 sample essays with human scores, the model iteratively refines the rubric by reflecting on its own scoring rationales and the discrepancies between its predicted scores and human labels, with the objective of maximizing Quadratic Weighted Kappa (QWK) between model and human scores.
 
-Experiments on three datasets (ASAP, ASAP 2.0, and TOEFL11) and three models (\texttt{GPT-5 mini}, \texttt{Qwen3-30B-A3B}, and \texttt{Gemini 3 Flash}) show that iterative rubric refinement can lead to substantial improvements in QWK on some datasets (up to +0.441 on ASAP). Also, we show even from the simplest seed rubric, our method can achieve comparable or better performance than using rubrics written by human experts. However, we also observe that the effectiveness of refinement is dataset- and setting-dependent, with some cases showing performance degradations. These results suggest that while iterative rubric refinement is a promising direction for improving LLM-based AES, it has room for improvement.
+We evaluate our method on three datasets (ASAP, ASAP 2.0, and TOEFL11) with three models (\texttt{GPT-5 mini}, \texttt{Qwen3-80B-A3B}, and \texttt{Gemini 3 Flash}). Our main findings are as follows:
+\begin{itemize}
+    \item Iterative rubric refinement with chain-of-thought rationales yields substantial QWK improvements, with gains of up to +0.388 on ASAP P1, consistently outperforming single-pass revision without rationales.
+    \item Even starting from a minimal seed rubric that specifies only the score scale, our method achieves comparable or better performance than carefully authored expert rubrics in most settings, substantially reducing the need for manual rubric authoring.
+    \item Qualitative analysis reveals that the refinement process introduces explicit decision rules, concrete scoring heuristics, and boundary-case guidance that are absent from the original human-authored rubrics.
+    \item However, the effectiveness of refinement varies across datasets, with limited or negative gains on TOEFL11 for some models, indicating room for improvement in cross-dataset robustness.
+\end{itemize}
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.85\textwidth]{figures/confusion_matrices.pdf}
-\caption{Confusion matrices for Qwen3-30B-A3B with the human expert rubric (top) and our refined rubric (bottom) across three datasets. Cell colors indicate row-normalized proportions; numbers show raw counts. Our refined rubric produces predictions more concentrated along the diagonal, indicating better agreement with human annotations.}
+\caption{Confusion matrices for Qwen3-80B-A3B with the human expert rubric (top) and our refined rubric (bottom) across three datasets. Cell colors indicate row-normalized proportions; numbers show raw counts. Our refined rubric produces predictions more concentrated along the diagonal, indicating better agreement with human annotations.}
 \label{fig:confusion}
 \end{figure*}
 
@@ -233,7 +238,7 @@ The global best rubric \(\rubric_{\mathrm{best}}\) is updated only when the best
 \label{sec:experiments}
 
 \subsection{Datasets}
-We evaluate on three essay scoring benchmarks. The Automated Student Assessment Prize (ASAP) dataset~\citep{ben2012asap} consists of student essays from U.S.\ standardized tests; we use essay set~1(P1), which contains persuasive essays scored on an integer scale from 1 to 6 by human raters. ASAP 2.0~\citep{Crossley2025ASAP2} is a corpus of source-based argumentative essays written by U.S.\ secondary students across seven prompts, scored on a 1--6 integer scale with consistent rubrics and accompanying source texts; we use the ``Exploring Venus'' subset in our experiments. The TOEFL11 corpus~\citep{blanchard2013toefl} contains English essays written by non-native speakers across eight essay prompts, labeled at three proficiency levels (high, medium, low). For each dataset, we use 100 training samples for rubric refinement and evaluate on 100 held-out test samples. The expert and simplest seed rubrics of ASAP are provided in Appendix~\ref{sec:appendix_rubrics}.
+We evaluate on three essay scoring benchmarks. The Automated Student Assessment Prize (ASAP) dataset~\citep{ben2012asap} consists of student essays from U.S.\ standardized tests; we use essay set~1 (P1), which contains persuasive essays scored on an integer scale from 1 to 6 by human raters. ASAP 2.0~\citep{Crossley2025ASAP2} is a corpus of source-based argumentative essays written by U.S.\ secondary students across seven prompts, scored on a 1--6 integer scale with consistent rubrics and accompanying source texts; we use the ``Exploring Venus'' subset in our experiments. The TOEFL11 corpus~\citep{blanchard2013toefl} contains English essays written by non-native speakers across eight essay prompts, labeled at three proficiency levels (high, medium, low). For each dataset, we use 100 training samples for rubric refinement and evaluate on 100 held-out test samples. The expert and simplest seed rubrics of ASAP are provided in Appendix~\ref{sec:appendix_rubrics}.
 
 For TOEFL11, the original rubric defines five proficiency levels (scores 1--5), but the dataset labels use three levels (high, medium, low). We adopt the rubric descriptions for score 4 as \textit{high} (mapped to score 3), score 3 as \textit{medium} (mapped to score 2), and score 2 as \textit{low} (mapped to score 1). 
 
@@ -272,18 +277,18 @@ GPT-5 mini & Human & 0.042 & 0.110 & 0.151 & 0.058 & 1.430 \\
 GPT-5 mini & AutoCalibrate & \underline{0.117} & \underline{0.250} & \underline{0.280} & \underline{0.121} & \underline{1.010} \\
 GPT-5 mini & \textbf{Ours} & \textbf{0.430} & \textbf{0.470} & \textbf{0.455} & \textbf{0.284} & \textbf{0.570} \\
 \midrule
-Qwen3-30B-A3B & Human & \underline{0.121} & \underline{0.130} & \underline{0.323} & \underline{0.123} & \underline{1.540} \\
-Qwen3-30B-A3B & AutoCalibrate & 0.073 & 0.110 & 0.217 & 0.076 & 1.620 \\
-Qwen3-30B-A3B & \textbf{Ours} & \textbf{0.213} & \textbf{0.400} & \textbf{0.349} & \textbf{0.234} & \textbf{0.870} \\
+Qwen3-80B-A3B & Human & \underline{0.121} & \underline{0.130} & \underline{0.323} & \underline{0.123} & \underline{1.540} \\
+Qwen3-80B-A3B & AutoCalibrate & 0.073 & 0.110 & 0.217 & 0.076 & 1.620 \\
+Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.213} & \textbf{0.400} & \textbf{0.349} & \textbf{0.234} & \textbf{0.870} \\
 \bottomrule
 \end{tabular}
 \caption{Zero-shot evaluation results on ASAP P1 with expert seed rubrics. Bold and underlined values indicate the best and second-best scores for each model.}
 \label{tab:asap1}
 \end{table*}
 
-On ASAP P1, our method achieves the highest QWK across all three models, with improvements over the human rubric ranging from +0.092 (Qwen3-30B-A3B) to +0.388 (GPT-5 mini). The most notable case is GPT-5 mini, where the human rubric yields near-chance agreement (QWK\,=\,0.042), but our refined rubric raises QWK to 0.430. Our method also consistently outperforms AutoCalibrate, confirming the benefit of iterative refinement with chain-of-thought rationales over single-pass revision without rationales.
+On ASAP P1, our method achieves the highest QWK across all three models, with improvements over the human rubric ranging from +0.092 (Qwen3-80B-A3B) to +0.388 (GPT-5 mini). The most notable case is GPT-5 mini, where the human rubric yields near-chance agreement (QWK\,=\,0.042), but our refined rubric raises QWK to 0.430. Our method also consistently outperforms AutoCalibrate, confirming the benefit of iterative refinement with chain-of-thought rationales over single-pass revision without rationales.
 
-On ASAP 2.0 (Table~\ref{tab:asap2}), our method achieves the best QWK for GPT-5 mini (0.466) and Qwen3-30B-A3B (0.664), while AutoCalibrate obtains a slightly higher QWK for Gemini 3 Flash (0.651 vs.\ 0.639). On TOEFL11 (Table~\ref{tab:toefl}), results are more mixed: our method achieves the best QWK only for Qwen3-30B-A3B (0.474), while the human rubric and AutoCalibrate perform better for GPT-5 mini and Gemini 3 Flash, respectively. These results indicate that the effectiveness of iterative rubric refinement varies across datasets. The largest improvements tend to occur when the initial human rubric performs poorly for a given model, suggesting that refinement is most beneficial when the default rubric is poorly calibrated for the target model.
+On ASAP 2.0 (Table~\ref{tab:asap2}), our method achieves the best QWK for GPT-5 mini (0.466) and Qwen3-80B-A3B (0.664), while AutoCalibrate obtains a slightly higher QWK for Gemini 3 Flash (0.651 vs.\ 0.639). On TOEFL11 (Table~\ref{tab:toefl}), results are more mixed: our method achieves the best QWK only for Qwen3-80B-A3B (0.474), while the human rubric and AutoCalibrate perform better for GPT-5 mini and Gemini 3 Flash, respectively. These results indicate that the effectiveness of iterative rubric refinement varies across datasets. The largest improvements tend to occur when the initial human rubric performs poorly for a given model, suggesting that refinement is most beneficial when the default rubric is poorly calibrated for the target model.
 
 \subsection{Refinement from Minimal Seed Rubrics}
 \label{sec:simplest_seed}
@@ -302,22 +307,22 @@ A key practical question is whether rubric refinement can reduce the burden of m
 \midrule
 ASAP P1 & GPT-5 mini & 0.285 & +0.243 \\
  & Gemini 3 Flash & 0.556 & +0.129 \\
- & Qwen3-30B-A3B & 0.442 & +0.322 \\
+ & Qwen3-80B-A3B & 0.442 & +0.322 \\
 \midrule
 ASAP 2.0 & GPT-5 mini & 0.377 & +0.019 \\
  & Gemini 3 Flash & 0.649 & +0.036 \\
- & Qwen3-30B-A3B & 0.669 & +0.094 \\
+ & Qwen3-80B-A3B & 0.669 & +0.094 \\
 \midrule
 TOEFL11 & GPT-5 mini & 0.527 & +0.080 \\
  & Gemini 3 Flash & 0.493 & $-$0.082 \\
- & Qwen3-30B-A3B & 0.334 & $-$0.030 \\
+ & Qwen3-80B-A3B & 0.334 & $-$0.030 \\
 \bottomrule
 \end{tabular}
 \caption{QWK comparison: rubrics refined from the simplest seed (``Based on the response's content, rate the response on a scale of 1 to 6.'') vs.\ the rubric written by human experts. $\Delta$ denotes QWK improvement over the Human Expert baseline.}
 \label{tab:simplest}
 \end{table}
 
-On ASAP P1 and ASAP 2.0, rubrics refined from the simplest seed consistently outperform the unrefined human expert rubric across all three models, with improvements up to +0.322 QWK (Qwen3-30B-A3B on ASAP P1). On TOEFL11, results are mixed: GPT-5 mini improves by +0.080, while Gemini 3 Flash and Qwen3-30B-A3B show slight degradations ($-$0.082 and $-$0.030, respectively). Overall, these results demonstrate that our method can, in many settings, recover or exceed the performance of a carefully authored expert rubric starting from only a minimal specification of the score scale. This substantially reduces the need for manual rubric authoring, as the refinement process can automatically discover effective scoring criteria from a small set of labeled examples.
+On ASAP P1 and ASAP 2.0, rubrics refined from the simplest seed consistently outperform the unrefined human expert rubric across all three models, with improvements up to +0.322 QWK (Qwen3-80B-A3B on ASAP P1). On TOEFL11, results are mixed: GPT-5 mini improves by +0.080, while Gemini 3 Flash and Qwen3-80B-A3B show slight degradations ($-$0.082 and $-$0.030, respectively). Overall, these results demonstrate that our method can, in many settings, match or exceed the performance of a carefully authored expert rubric starting from only a minimal specification of the score scale. This substantially reduces the need for manual rubric authoring, as the refinement process can automatically discover effective scoring criteria from a small set of labeled examples.
 
 \subsection{Qualitative Analysis of Refined Rubrics}
 \label{sec:qualitative}
@@ -354,7 +359,7 @@ Comparison between the original expert rubric and the refined rubric reveals thr
 \label{sec:discussion}
 
 \paragraph{Effect of iterative refinement}
-To analyze the effect of iterative refinement, we track the training QWK of the best candidate rubric at each iteration. Figure~\ref{fig:training_qwk} shows these trajectories for each model on ASAP 2.0. Across all three models, training QWK improves monotonically over iterations, as the selection mechanism retains only the best candidates at each step. The steepest gains occur in the first two iterations, after which the improvements become more gradual. This pattern suggests that early iterations address the most salient scoring errors, while later iterations yield diminishing but still positive returns. Notably, the rate of improvement differs across models: Qwen3-30B-A3B exhibits the largest single-iteration gain, while Gemini 3 Flash shows a more steady progression.
+To analyze the effect of iterative refinement, we track the training QWK of the best candidate rubric at each iteration. Figure~\ref{fig:training_qwk} shows these trajectories for each model on ASAP 2.0. Across all three models, training QWK improves monotonically over iterations, as the selection mechanism retains only the best candidates at each step. The steepest gains occur in the first two iterations, after which the improvements become more gradual. This pattern suggests that early iterations address the most salient scoring errors, while later iterations yield diminishing but still positive returns. Notably, the rate of improvement differs across models: Qwen3-80B-A3B exhibits the largest single-iteration gain, while Gemini 3 Flash shows a more steady progression.
 
 \begin{figure*}[t]
 \centering
@@ -364,7 +369,7 @@ To analyze the effect of iterative refinement, we track the training QWK of the 
 \end{figure*}
 
 \paragraph{Scoring distribution analysis}
-To visualize how rubric refinement changes scoring behavior, Figure~\ref{fig:confusion} shows confusion matrices for Qwen3-30B-A3B with the human expert rubric versus our refined rubric across all three datasets. On ASAP~P1, the human rubric causes severe under-scoring: predictions cluster around scores 2--3 regardless of the true score. Our refined rubric shifts the distribution toward the diagonal, concentrating predictions around score~4---the most frequent true score---and dramatically improving accuracy from 13\% to 40\%. On ASAP~2.0, a similar pattern emerges: the human rubric scatters predictions across scores 1--3, while our rubric aligns predictions with the true score distribution, improving accuracy from 27\% to 51\%. On TOEFL11, the human rubric never predicts the ``High'' category, collapsing all predictions into Low and Medium. Our refined rubric recovers the ability to predict all three levels, improving accuracy from 48\% to 61\%, although some Low-scored essays are misclassified as Medium. These patterns suggest that the primary mechanism of improvement is better calibration of score boundaries to match the target distribution.
+To visualize how rubric refinement changes scoring behavior, Figure~\ref{fig:confusion} shows confusion matrices for Qwen3-80B-A3B with the human expert rubric versus our refined rubric across all three datasets. On ASAP~P1, the human rubric causes severe under-scoring: predictions cluster around scores 2--3 regardless of the true score. Our refined rubric shifts the distribution toward the diagonal, concentrating predictions around score~4---the most frequent true score---and dramatically improving accuracy from 13\% to 40\%. On ASAP~2.0, a similar pattern emerges: the human rubric scatters predictions across scores 1--3, while our rubric aligns predictions with the true score distribution, improving accuracy from 27\% to 51\%. On TOEFL11, the human rubric never predicts the ``High'' category, collapsing all predictions into Low and Medium. Our refined rubric recovers the ability to predict all three levels, improving accuracy from 48\% to 61\%, although some Low-scored essays are misclassified as Medium. These patterns suggest that the primary mechanism of improvement is better calibration of score boundaries to match the target distribution.
 
 \paragraph{Cross-model rubric transferability}
 An important question for practical deployment is whether rubrics optimized for one model can benefit other models. To investigate this, we evaluate rubrics refined by each model on the other two models. Table~\ref{tab:cross_model} shows cross-model QWK for expert-seed rubrics refined with our method.
@@ -374,35 +379,47 @@ An important question for practical deployment is whether rubrics optimized for 
 \small
 \begin{tabular}{lrrr}
 \toprule
-\textbf{Source $\backslash$ Evaluator} & \textbf{GPT-5 mini} & \textbf{Gemini 3 Flash} & \textbf{Qwen3-30B-A3B} \\
+\textbf{Source $\backslash$ Evaluator} & \textbf{GPT-5 mini} & \textbf{Gemini 3 Flash} & \textbf{Qwen3-80B-A3B} \\
 \multicolumn{4}{l}{\textit{ASAP P1}} \\
 Human & 0.042 & 0.427 & 0.121 \\
 GPT-5 mini & \textbf{\cellcolor{gray!20}0.430} & 0.440 & 0.128 \\
 Gemini 3 Flash & 0.210 & \textbf{\cellcolor{gray!20}0.576} & \textbf{0.524} \\
-Qwen3-30B-A3B & 0.001 & 0.365 & \cellcolor{gray!20}0.213 \\
+Qwen3-80B-A3B & 0.001 & 0.365 & \cellcolor{gray!20}0.213 \\
 \midrule
 \multicolumn{4}{l}{\textit{ASAP 2.0}} \\
 Human & 0.358 & 0.613 & 0.575 \\
 GPT-5 mini & \textbf{\cellcolor{gray!20}0.466} & \textbf{0.688} & 0.199 \\
 Gemini 3 Flash & 0.373 & \cellcolor{gray!20}0.639 & 0.463 \\
-Qwen3-30B-A3B & 0.264 & 0.480 & \textbf{\cellcolor{gray!20}0.664} \\
+Qwen3-80B-A3B & 0.264 & 0.480 & \textbf{\cellcolor{gray!20}0.664} \\
 \midrule
 \multicolumn{4}{l}{\textit{TOEFL11}} \\
 Human & \textbf{0.447} & \textbf{0.574} & 0.364 \\
 GPT-5 mini & \cellcolor{gray!20}0.329 & 0.460 & 0.316 \\
 Gemini 3 Flash & 0.140 & \cellcolor{gray!20}0.471 & \textbf{0.485} \\
-Qwen3-30B-A3B & 0.055 & 0.461 & \cellcolor{gray!20}0.474 \\
+Qwen3-80B-A3B & 0.055 & 0.461 & \cellcolor{gray!20}0.474 \\
 \bottomrule
 \end{tabular}
 \caption{Cross-model rubric transferability (QWK). Each cell shows QWK when the rubric optimized by the \textit{source} model (row) is used by the \textit{evaluator} model (column). Shaded diagonal cells denote same-model results. ``Human'' row shows the unrefined human rubric baseline. Bold values indicate the best QWK per evaluator model within each dataset.}
 \label{tab:cross_model}
 \end{table*}
 
-The results reveal that transferability is highly asymmetric and dataset-dependent. On ASAP P1, the rubric refined by Gemini 3 Flash yields the best QWK not only for Gemini itself (0.576) but also for Qwen3-30B-A3B (0.524), substantially outperforming Qwen's own refined rubric (0.213). Similarly, on ASAP 2.0, the rubric refined by GPT-5 mini achieves the highest QWK when used by Gemini 3 Flash (0.688), surpassing Gemini's own rubric (0.639). These cases suggest that some models produce rubrics that capture more generalizable scoring criteria. However, the reverse transfers are often ineffective: on ASAP P1, the Qwen-refined rubric yields near-zero QWK for GPT-5 mini (0.001). On TOEFL11, the unrefined human rubric remains the strongest option for GPT-5 mini and Gemini 3 Flash, indicating that refined rubrics can overfit to model-specific scoring patterns on certain datasets. Overall, while cross-model transfer can sometimes be beneficial, rubrics are generally most effective when optimized for the target model.
+The results reveal that transferability is highly asymmetric and dataset-dependent. On ASAP P1, the rubric refined by Gemini 3 Flash yields the best QWK not only for Gemini itself (0.576) but also for Qwen3-80B-A3B (0.524), substantially outperforming Qwen's own refined rubric (0.213). Similarly, on ASAP 2.0, the rubric refined by GPT-5 mini achieves the highest QWK when used by Gemini 3 Flash (0.688), surpassing Gemini's own rubric (0.639). These cases suggest that some models produce rubrics that capture more generalizable scoring criteria. However, the reverse transfers are often ineffective: on ASAP P1, the Qwen-refined rubric yields near-zero QWK for GPT-5 mini (0.001). On TOEFL11, the unrefined human rubric remains the strongest option for GPT-5 mini and Gemini 3 Flash, indicating that refined rubrics can overfit to model-specific scoring patterns on certain datasets. Overall, while cross-model transfer can sometimes be beneficial, rubrics are generally most effective when optimized for the target model.
 
 \section{Conclusion}
 
 We proposed an iterative Reflect-and-Revise approach for refining scoring rubrics in LLM-based automated essay scoring. By prompting models to reflect on their own chain-of-thought rationales and observed score discrepancies with human labels, our method enables targeted rubric revisions that improve alignment with human scoring. Experiments on three datasets and three models demonstrate that our approach yields substantial QWK improvements on ASAP P1 (up to +0.388) and consistent gains on ASAP 2.0, while also showing that rubrics refined from minimal seed specifications can match or exceed human expert rubrics. However, the effectiveness varies across datasets, with limited or negative gains on TOEFL11 for some models. These findings suggest that iterative rubric refinement is a promising direction for reducing manual rubric authoring effort and improving LLM-based AES, while also highlighting the need for future work on preventing overfitting to training distributions and improving cross-dataset robustness.
+
+\section*{Limitations}
+
+Our study has several limitations. First, our evaluation covers three essay scoring benchmarks with a single essay set per dataset. The generalizability of our findings to other scoring tasks, writing genres, or educational contexts remains to be verified through broader evaluation.
+
+Second, the effectiveness of our method varies considerably across datasets and models. On TOEFL11, the refined rubrics underperform the original human rubric for some models, suggesting that the refinement process can introduce biases that do not generalize beyond the training samples. This inconsistency indicates that our method may be less effective when the initial rubric is already well-calibrated for the target model or when the training and test distributions differ substantially.
+
+Third, the iterative refinement process incurs non-trivial computational cost, as each iteration requires scoring all training samples with the current rubric candidates. With five iterations, three candidates, and multiple batch sizes, the total number of LLM calls scales considerably, which may limit practical applicability in resource-constrained settings.
+
+Fourth, our experiments use only 100 training samples for rubric refinement. While this reflects realistic scenarios where labeled data is scarce, the small sample size may increase the risk of overfitting the rubric to idiosyncratic properties of the training set rather than capturing generalizable scoring patterns.
+
+Finally, our cross-model transfer analysis reveals that rubrics optimized for one model do not reliably benefit other models, and in some cases substantially degrade performance. This limits the reusability of refined rubrics and suggests that separate optimization may be required for each target model.
 
 \bibliography{custom}
 \appendix
@@ -553,6 +570,8 @@ For all models, we set the maximum output tokens to 8192. For GPT-5-mini and Gem
 \section{Full Results on ASAP 2.0 and TOEFL11}
 \label{sec:appendix_full_results}
 
+Tables~\ref{tab:asap2} and~\ref{tab:toefl} report the full zero-shot evaluation results on ASAP 2.0 and TOEFL11, respectively, complementing the ASAP P1 results in Table~\ref{tab:asap1}. On ASAP 2.0 (Table~\ref{tab:asap2}), our method achieves the best QWK for GPT-5 mini (0.466) and Qwen3-80B-A3B (0.664), while AutoCalibrate obtains a slightly higher QWK for Gemini 3 Flash (0.651 vs.\ 0.639). On TOEFL11 (Table~\ref{tab:toefl}), results are more mixed: our method achieves the best QWK only for Qwen3-80B-A3B (0.474), while the human rubric remains strongest for GPT-5 mini (0.447) and AutoCalibrate performs best for Gemini 3 Flash (0.597). These results are discussed in detail in \S\ref{sec:main_results}.
+
 \begin{table*}[t]
 \centering
 \begin{tabular}{llrrrrr}
@@ -567,12 +586,12 @@ GPT-5 mini & Human & \underline{0.358} & \underline{0.350} & \textbf{0.533} & 0.
 GPT-5 mini & AutoCalibrate & 0.277 & \textbf{0.370} & \underline{0.471} & \underline{0.148} & 0.820 \\
 GPT-5 mini & \textbf{Ours} & \textbf{0.466} & \textbf{0.370} & 0.458 & \textbf{0.190} & \textbf{0.710} \\
 \midrule
-Qwen3-30B-A3B & Human & \underline{0.575} & \underline{0.270} & \textbf{0.668} & \underline{0.272} & \underline{0.890} \\
-Qwen3-30B-A3B & AutoCalibrate & 0.544 & \underline{0.270} & 0.577 & 0.259 & 0.950 \\
-Qwen3-30B-A3B & \textbf{Ours} & \textbf{0.664} & \textbf{0.510} & \underline{0.657} & \textbf{0.381} & \textbf{0.610} \\
+Qwen3-80B-A3B & Human & \underline{0.575} & \underline{0.270} & \textbf{0.668} & \underline{0.272} & \underline{0.890} \\
+Qwen3-80B-A3B & AutoCalibrate & 0.544 & \underline{0.270} & 0.577 & 0.259 & 0.950 \\
+Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.664} & \textbf{0.510} & \underline{0.657} & \textbf{0.381} & \textbf{0.610} \\
 \bottomrule
 \end{tabular}
-\caption{Zero-shot evaluation results on ASAP 2.0 with expert seed rubrics.}
+\caption{Zero-shot evaluation results on ASAP 2.0 with expert seed rubrics. Bold and underlined values indicate the best and second-best scores for each model.}
 \label{tab:asap2}
 \end{table*}
 
@@ -590,12 +609,12 @@ GPT-5 mini & Human & \textbf{0.447} & \textbf{0.680} & \underline{0.434} & 0.165
 GPT-5 mini & AutoCalibrate & \underline{0.419} & 0.620 & \textbf{0.482} & \textbf{0.542} & \underline{0.410} \\
 GPT-5 mini & \textbf{Ours} & 0.329 & \underline{0.670} & 0.361 & \underline{0.483} & \textbf{0.350} \\
 \midrule
-Qwen3-30B-A3B & Human & 0.364 & 0.470 & \underline{0.471} & 0.344 & 0.530 \\
-Qwen3-30B-A3B & AutoCalibrate & \underline{0.428} & \underline{0.570} & 0.454 & \underline{0.533} & \underline{0.460} \\
-Qwen3-30B-A3B & \textbf{Ours} & \textbf{0.474} & \textbf{0.610} & \textbf{0.480} & \textbf{0.540} & \textbf{0.390} \\
+Qwen3-80B-A3B & Human & 0.364 & 0.470 & \underline{0.471} & 0.344 & 0.530 \\
+Qwen3-80B-A3B & AutoCalibrate & \underline{0.428} & \underline{0.570} & 0.454 & \underline{0.533} & \underline{0.460} \\
+Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.474} & \textbf{0.610} & \textbf{0.480} & \textbf{0.540} & \textbf{0.390} \\
 \bottomrule
 \end{tabular}
-\caption{Zero-shot evaluation results on TOEFL11 with expert seed rubrics.}
+\caption{Zero-shot evaluation results on TOEFL11 with expert seed rubrics. Bold and underlined values indicate the best and second-best scores for each model.}
 \label{tab:toefl}
 \end{table*}
 
@@ -650,7 +669,7 @@ I have made an effort to remove personally identifying information from the essa
 \subsection{Simplest rubric}
 
 \begin{tcolorbox}[colback=white, colframe=gray, fontupper=\small]
-Based on the response\'s content, rate the response on a scale of 1 to 6.
+Based on the response's content, rate the response on a scale of 1 to 6.
 \end{tcolorbox}
 
 \subsection{Refined rubric (GPT-5~mini, ASAP P1, expert seed)}
