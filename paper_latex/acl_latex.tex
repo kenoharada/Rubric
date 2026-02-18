@@ -789,5 +789,125 @@ Illustrative heuristics (short mapping):
 \end{itemize}
 \end{tcolorbox}
 
+\begin{table*}[t]
+\centering
+\caption{Evaluation results for ASAP 2.0}
+\begin{tabular}{llrrrrr}
+\toprule
+LLM & Rubric written by & QWK & Accuracy & Spearman & Macro-F1 & MAE \\
+\midrule
+Gemini 3 Flash & Human & 0.613 & \underline{0.440} & 0.657 & \underline{0.270} & \underline{0.610} \\
+Gemini 3 Flash & AutoCalibrate & \textbf{0.651} & \textbf{0.490} & \underline{0.697} & \textbf{0.308} & \textbf{0.540} \\
+Gemini 3 Flash & \textbf{Ours} & \underline{0.639} & 0.420 & \textbf{0.754} & 0.226 & 0.620 \\
+\midrule
+GPT-5 mini & Human & \underline{0.358} & 0.350 & \textbf{0.533} & 0.148 & \textbf{0.780} \\
+GPT-5 mini & AutoCalibrate & 0.277 & \underline{0.370} & \underline{0.471} & \underline{0.148} & \underline{0.820} \\
+GPT-5 mini & \textbf{Ours} & \textbf{0.398} & \textbf{0.380} & 0.407 & \textbf{0.195} & \textbf{0.780} \\
+\midrule
+Qwen3-80B-A3B & Human & \textbf{0.575} & \underline{0.270} & \textbf{0.668} & \underline{0.272} & \underline{0.890} \\
+Qwen3-80B-A3B & AutoCalibrate & 0.544 & \underline{0.270} & 0.577 & 0.259 & 0.950 \\
+Qwen3-80B-A3B & \textbf{Ours} & \underline{0.558} & \textbf{0.340} & \underline{0.603} & \textbf{0.325} & \textbf{0.850} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Evaluation results for ASAP P1}
+\begin{tabular}{llrrrrr}
+\toprule
+LLM & Rubric written by & QWK & Accuracy & Spearman & Macro-F1 & MAE \\
+\midrule
+Gemini 3 Flash & Human & 0.427 & \underline{0.404} & 0.568 & \underline{0.307} & \underline{0.697} \\
+Gemini 3 Flash & AutoCalibrate & \underline{0.452} & 0.390 & \underline{0.597} & 0.288 & 0.710 \\
+Gemini 3 Flash & \textbf{Ours} & \textbf{0.643} & \textbf{0.590} & \textbf{0.624} & \textbf{0.558} & \textbf{0.410} \\
+\midrule
+GPT-5 mini & Human & 0.042 & 0.110 & 0.151 & 0.058 & 1.430 \\
+GPT-5 mini & AutoCalibrate & \underline{0.117} & \underline{0.250} & \underline{0.280} & \underline{0.121} & \underline{1.010} \\
+GPT-5 mini & \textbf{Ours} & \textbf{0.429} & \textbf{0.455} & \textbf{0.422} & \textbf{0.274} & \textbf{0.596} \\
+\midrule
+Qwen3-80B-A3B & Human & \underline{0.121} & \underline{0.130} & \underline{0.323} & \underline{0.123} & \underline{1.540} \\
+Qwen3-80B-A3B & AutoCalibrate & 0.073 & 0.110 & 0.217 & 0.076 & 1.620 \\
+Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.339} & \textbf{0.470} & \textbf{0.399} & \textbf{0.344} & \textbf{0.730} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Evaluation results for TOEFL11}
+\begin{tabular}{llrrrrr}
+\toprule
+LLM & Rubric written by & QWK & Accuracy & Spearman & Macro-F1 & MAE \\
+\midrule
+Gemini 3 Flash & Human & \underline{0.574} & \underline{0.690} & \underline{0.621} & \textbf{0.636} & \underline{0.320} \\
+Gemini 3 Flash & AutoCalibrate & \textbf{0.597} & 0.680 & \textbf{0.648} & \underline{0.636} & \underline{0.320} \\
+Gemini 3 Flash & \textbf{Ours} & 0.477 & \textbf{0.710} & 0.519 & 0.550 & \textbf{0.290} \\
+\midrule
+GPT-5 mini & Human & \underline{0.447} & \underline{0.680} & 0.475 & 0.528 & \underline{0.320} \\
+GPT-5 mini & AutoCalibrate & 0.419 & 0.620 & \underline{0.482} & \underline{0.542} & 0.410 \\
+GPT-5 mini & \textbf{Ours} & \textbf{0.485} & \textbf{0.700} & \textbf{0.509} & \textbf{0.571} & \textbf{0.300} \\
+\midrule
+Qwen3-80B-A3B & Human & 0.364 & 0.470 & \underline{0.476} & 0.423 & 0.560 \\
+Qwen3-80B-A3B & AutoCalibrate & \underline{0.428} & \underline{0.570} & 0.454 & \underline{0.533} & \underline{0.460} \\
+Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.499} & \textbf{0.650} & \textbf{0.515} & \textbf{0.573} & \textbf{0.360} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table}[t]
+\centering
+\small
+\caption{QWK comparison: rubrics refined from the simplest seed (``Based on the response's content, rate the response on a scale of 1 to 6.'') vs.\ the rubric written by human experts. $\Delta$ denotes QWK improvement over the Human Expert baseline.}
+\label{tab:simplest}
+\begin{tabular}{llrr}
+\toprule
+\textbf{Dataset} & \textbf{LLM} & \textbf{Simplest} & \textbf{$\Delta$ vs.\ Human} \\
+ & & \textbf{+ Ours} & \textbf{Expert} \\
+\midrule
+ASAP P1 & GPT-5 mini & 0.265 & +0.224 \\
+ & Gemini 3 Flash & 0.642 & +0.214 \\
+ & Qwen3-80B-A3B & 0.435 & +0.314 \\
+\midrule
+ASAP 2.0 & GPT-5 mini & 0.370 & +0.012 \\
+ & Gemini 3 Flash & 0.669 & +0.056 \\
+ & Qwen3-80B-A3B & 0.626 & +0.051 \\
+\midrule
+TOEFL11 & GPT-5 mini & 0.505 & +0.059 \\
+ & Gemini 3 Flash & 0.519 & $-$0.055 \\
+ & Qwen3-80B-A3B & 0.524 & +0.160 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table*}[t]
+\centering
+\small
+\caption{Cross-model rubric transferability (QWK). Each cell shows QWK when the rubric optimized by the \textit{source} model (row) is used by the \textit{evaluator} model (column). Shaded diagonal cells denote same-model results. ``Human'' row shows the unrefined human rubric baseline. Bold values indicate the best QWK per evaluator model within each dataset.}
+\label{tab:cross_model}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Source $\backslash$ Evaluator} & \textbf{GPT-5 mini} & \textbf{Gemini 3 Flash} & \textbf{Qwen3-80B-A3B} \\
+\multicolumn{4}{l}{\textit{ASAP P1}} \\
+Human & 0.042 & 0.427 & 0.121 \\
+GPT-5 mini & \textbf{\cellcolor{gray!20}0.429} & 0.424 & \textbf{0.369} \\
+Gemini 3 Flash & 0.235 & \textbf{\cellcolor{gray!20}0.643} & 0.355 \\
+Qwen3-80B-A3B & 0.060 & 0.297 & \cellcolor{gray!20}0.339 \\
+\midrule
+\multicolumn{4}{l}{\textit{ASAP 2.0}} \\
+Human & 0.358 & 0.613 & \textbf{0.575} \\
+GPT-5 mini & \cellcolor{gray!20}0.398 & \textbf{0.651} & 0.329 \\
+Gemini 3 Flash & \textbf{0.399} & \cellcolor{gray!20}0.639 & 0.312 \\
+Qwen3-80B-A3B & 0.321 & 0.644 & \cellcolor{gray!20}0.558 \\
+\midrule
+\multicolumn{4}{l}{\textit{TOEFL11}} \\
+Human & 0.447 & \textbf{0.574} & 0.364 \\
+GPT-5 mini & \textbf{\cellcolor{gray!20}0.485} & 0.557 & 0.341 \\
+Gemini 3 Flash & 0.360 & \cellcolor{gray!20}0.477 & 0.483 \\
+Qwen3-80B-A3B & 0.107 & 0.376 & \textbf{\cellcolor{gray!20}0.499} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
 
 \end{document}
