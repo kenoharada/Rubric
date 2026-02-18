@@ -32,9 +32,9 @@ for dataset in "${DATASETS[@]}"; do
                                         #     continue
                                         # fi
                                         # if with_rationale == False and Iteration > 1, skip
-                                        if [[ "$with_rationale" == "False" && "$iteration" != "1" ]]; then
-                                            continue
-                                        fi
+                                        # if [[ "$with_rationale" == "False" && "$iteration" != "1" ]]; then
+                                        #     continue
+                                        # fi
                                         echo "Starting optimization for model: $MODEL_NAME with params: $PARAMS, dataset: $dataset, method: $method, seed_prompt: $seed_prompt, with_rationale: $with_rationale, iteration: $iteration, top_k: $top_k, train_size: $train_size, batch_sizes: [$batch_sizes], monte_carlo_runs: $monte_carlo_runs, trial: $TRIAL"
                                         nohup python3 inference.py \
                                             --optimize_method "$method" \

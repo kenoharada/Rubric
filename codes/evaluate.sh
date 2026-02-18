@@ -10,7 +10,7 @@ rm logs/eval_*.log
 
 METHODS=(
     "zero_shot"
-    "few_shot"
+    # "few_shot"
 )
 
 OPTIMIZE_METHODS=(

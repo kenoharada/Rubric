@@ -85,13 +85,13 @@ load_model_profile() {
 load_inference_eval_hparams() {
     WITH_RATIONALES=(
         "True"
-        # "False"
+        "False"
     )
 
     ITERATIONS=(
         "5"
         # "3"
-        # "1"
+        "1"
     )
 
     TOP_KS=(
@@ -113,21 +113,20 @@ load_inference_eval_hparams() {
 
     MONTE_CARLO_RUNS=(
         # "1"
-        "2"
+        # "2"
         "4"
-        # "3"
     )
 
     DATASETS=(
-        # "asap_1"
+        "asap_1"
         # "ets"
-        # "ets3"
+        "ets3"
         "ASAP2"
     )
 
     SEED_PROMPTS=(
         "expert"
-        # "simplest"
+        "simplest"
         # "simple"
     )
 

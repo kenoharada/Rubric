@@ -613,7 +613,7 @@ async def main(args):
 
         if best_candidate_qwk > best_train_qwk:
             best_train_qwk = best_candidate_qwk
-            best_rubric = new_rubric
+            best_rubric = top_k_candidates[0][0]
             with open(os.path.join(result_dir, 'best_rubric.txt'), 'w') as f:
                 f.write(best_rubric)
     

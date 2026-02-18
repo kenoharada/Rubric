@@ -51,6 +51,9 @@ def get_llm_response(messages, model_name, config, verbose: bool = False, timeou
                 error_msg = f"OpenRouter error {response.status_code}: {response.text}"
                 text = response.text
                 print(f"Error response: {text}")
+                if verbose:
+                    print("Request payload:")
+                    print(json.dumps(payload, ensure_ascii=False, indent=2))
                 print(error_msg)
                 if response.status_code in [429, 500, 502, 503, 504] and attempt < max_retries:
                     sleep_s = retry_delay * (2 ** attempt)

@@ -7,7 +7,18 @@ from llm_router import get_llm_response
 # model_name = "google/gemini-3-flash-preview"
 # params = {"reasoning":{"effort":"high"},"max_tokens":8192,"provider":{"only":["OpenAI","Google"]}}
 model_name = "openai/gpt-5-mini"
-params = {"reasoning":{"effort":"low"},"max_tokens":8192,"provider":{"only":["OpenAI"]}, "require_parameters":True}
+# まずは最小構成で疎通確認:
+# - provider は azure 固定
+# - require_parameters は provider 内に置く
+# - reasoning は疎通確認後に追加する
+# - gpt-5 系は max_tokens ではなく max_completion_tokens を優先
+params = {
+    # まずはパラメータを最小化して BYOK 疎通のみ確認
+    "provider": {
+        "only": ["azure"],
+        "allow_fallbacks": False,
+    },
+}
 response = get_llm_response(
     messages=[
         {"role": "user", "content": "好きな数字は？"}
