@@ -148,8 +148,8 @@ We evaluate our method on three datasets (ASAP, ASAP 2.0, and TOEFL11) with thre
 
 \begin{table*}[t]
   \centering
-  \small
-  \begin{tabular}{p{2.2cm}ccccc}
+  \resizebox{\textwidth}{!}{%
+  \begin{tabular}{lccccc}
     \toprule
     \textbf{Study} &
     \textbf{Human-labeled} &
@@ -163,16 +163,16 @@ We evaluate our method on three datasets (ASAP, ASAP 2.0, and TOEFL11) with thre
     \textbf{scores} &
     \textbf{predicted scores} \\
     \midrule
-    \citet{liu-etal-2024-hd} & $\checkmark$ &  &  &  &  \\
-    \citet{lee-etal-2024-unleashing} &  &  & $\checkmark$ &  &  \\
+    HD-Eval (\citet{liu-etal-2024-hd}) & $\checkmark$ &  &  &  &  \\
+    MTS (\citet{lee-etal-2024-unleashing}) &  &  & $\checkmark$ &  &  \\
     \citet{xie2024gradelikehuman} & $\checkmark$ & $\checkmark$ &  &  &  \\
-    \citet{xu2025activecritics} & $\checkmark$ & $\checkmark$ & $\checkmark$ &  &  \\
-    \citet{liu-etal-2024-calibrating} & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  \\
+    ActiveCritic (\citet{xu2025activecritics}) & $\checkmark$ & $\checkmark$ & $\checkmark$ &  &  \\
+    AutoCalibrate (\citet{liu-etal-2024-calibrating}) & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  \\
     \midrule
     \textbf{Ours} &
     \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}}
   \caption{Used signals to rewrite or refine evaluation rubrics in prior work vs. ours. Our method uniquely uses all signals, including model-generated rationales for model-predicted scores. \textbf{Texts being evaluated} are the essays/answers/responses that receive scores. \textbf{Source passages used to compose responses} are the reference sentences/passages that the writer must consult when producing the evaluated text (e.g., source documents, provided essay themes). \textbf{Rationales} are models' justifications accompanying model-predicted scores.}
 \label{tab:rubric_rewrite_data_requirements}
 \end{table*}
@@ -269,22 +269,78 @@ Table~\ref{tab:asap1} reports zero-shot evaluation results on ASAP P1 with exper
 \toprule
 LLM & Rubric written by & QWK & Accuracy & Spearman & Macro-F1 & MAE \\
 \midrule
-Gemini 3 Flash & Human & 0.427 & \underline{0.404} & 0.568 & \underline{0.307} & \underline{0.697} \\
-Gemini 3 Flash & AutoCalibrate & \underline{0.452} & 0.390 & \underline{0.597} & 0.288 & 0.710 \\
-Gemini 3 Flash & \textbf{Ours} & \textbf{0.576} & \textbf{0.470} & \textbf{0.613} & \textbf{0.330} & \textbf{0.580} \\
+Gemini 3 Flash & Human & 0.427 & 0.404 & 0.568 & 0.307 & 0.697 \\
+Gemini 3 Flash & AutoCalibrate & 0.489 & 0.590 & 0.493 & \underline{0.382} & 0.460 \\
+Gemini 3 Flash & \textbf{Ours} & \textbf{0.646} & \textbf{0.680} & \textbf{0.656} & \textbf{0.595} & \textbf{0.330} \\
+Gemini 3 Flash & \textbf{Ours from simplest} & \underline{0.580} & \underline{0.650} & \underline{0.619} & 0.338 & \underline{0.360} \\
 \midrule
 GPT-5 mini & Human & 0.042 & 0.110 & 0.151 & 0.058 & 1.430 \\
-GPT-5 mini & AutoCalibrate & \underline{0.117} & \underline{0.250} & \underline{0.280} & \underline{0.121} & \underline{1.010} \\
-GPT-5 mini & \textbf{Ours} & \textbf{0.430} & \textbf{0.470} & \textbf{0.455} & \textbf{0.284} & \textbf{0.570} \\
+GPT-5 mini & AutoCalibrate & \underline{0.390} & \underline{0.410} & \underline{0.396} & \underline{0.231} & \underline{0.620} \\
+GPT-5 mini & \textbf{Ours} & \textbf{0.480} & \textbf{0.450} & \textbf{0.510} & \textbf{0.271} & \textbf{0.600} \\
+GPT-5 mini & \textbf{Ours from simplest} & 0.314 & 0.360 & 0.282 & 0.219 & 0.700 \\
 \midrule
-Qwen3-80B-A3B & Human & \underline{0.121} & \underline{0.130} & \underline{0.323} & \underline{0.123} & \underline{1.540} \\
-Qwen3-80B-A3B & AutoCalibrate & 0.073 & 0.110 & 0.217 & 0.076 & 1.620 \\
-Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.213} & \textbf{0.400} & \textbf{0.349} & \textbf{0.234} & \textbf{0.870} \\
+Qwen3-80B-A3B & Human & 0.121 & 0.130 & 0.323 & 0.123 & 1.540 \\
+Qwen3-80B-A3B & AutoCalibrate & \underline{0.240} & 0.310 & \underline{0.458} & \underline{0.233} & 1.100 \\
+Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.473} & \textbf{0.520} & \textbf{0.490} & \textbf{0.402} & \textbf{0.570} \\
+Qwen3-80B-A3B & \textbf{Ours from simplest} & 0.154 & \underline{0.320} & 0.188 & 0.158 & \underline{0.920} \\
 \bottomrule
 \end{tabular}
-\caption{Zero-shot evaluation results on ASAP P1 with expert seed rubrics. Bold and underlined values indicate the best and second-best scores for each model.}
+\caption{Zero-shot evaluation results on ASAP. Bold and underlined values indicate the best and second-best scores for each model.}
 \label{tab:asap1}
 \end{table*}
+
+\begin{table*}[t]
+\centering
+\begin{tabular}{llrrrrr}
+\toprule
+LLM & Rubric written by & QWK & Accuracy & Spearman & Macro-F1 & MAE \\
+\midrule
+Gemini 3 Flash & Human & 0.613 & 0.440 & 0.657 & 0.270 & 0.610 \\
+Gemini 3 Flash & AutoCalibrate & 0.646 & \underline{0.490} & \textbf{0.716} & 0.297 & \underline{0.550} \\
+Gemini 3 Flash & \textbf{Ours} & \textbf{0.700} & \textbf{0.540} & \underline{0.716} & \textbf{0.393} & \textbf{0.520} \\
+Gemini 3 Flash & \textbf{Ours from simplest} & \underline{0.651} & 0.470 & 0.682 & \underline{0.310} & 0.580 \\
+\midrule
+GPT-5 mini & Human & 0.358 & \underline{0.350} & \underline{0.533} & 0.148 & 0.780 \\
+GPT-5 mini & AutoCalibrate & 0.338 & 0.340 & 0.514 & 0.142 & 0.790 \\
+GPT-5 mini & \textbf{Ours} & \textbf{0.537} & \textbf{0.440} & \textbf{0.618} & \textbf{0.239} & \textbf{0.620} \\
+GPT-5 mini & \textbf{Ours from simplest} & \underline{0.452} & \underline{0.350} & 0.454 & \underline{0.176} & \underline{0.750} \\
+\midrule
+Qwen3-80B-A3B & Human & 0.575 & 0.270 & \textbf{0.668} & 0.272 & 0.890 \\
+Qwen3-80B-A3B & AutoCalibrate & \underline{0.595} & \underline{0.290} & 0.643 & \textbf{0.310} & 0.850 \\
+Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.636} & \textbf{0.410} & \underline{0.645} & \underline{0.295} & \textbf{0.660} \\
+Qwen3-80B-A3B & \textbf{Ours from simplest} & 0.509 & \underline{0.290} & 0.558 & 0.214 & \underline{0.820} \\
+\bottomrule
+\end{tabular}
+\caption{Zero-shot evaluation results on ASAP 2.0. Bold and underlined values indicate the best and second-best scores for each model.}
+\label{tab:asap2}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\begin{tabular}{llrrrrr}
+\toprule
+LLM & Rubric written by & QWK & Accuracy & Spearman & Macro-F1 & MAE \\
+\midrule
+Gemini 3 Flash & Human & \underline{0.574} & 0.690 & \underline{0.621} & \underline{0.636} & 0.320 \\
+Gemini 3 Flash & AutoCalibrate & 0.510 & 0.650 & 0.528 & 0.591 & 0.360 \\
+Gemini 3 Flash & \textbf{Ours} & 0.557 & \underline{0.720} & 0.568 & 0.630 & \underline{0.280} \\
+Gemini 3 Flash & \textbf{Ours from simplest} & \textbf{0.663} & \textbf{0.770} & \textbf{0.672} & \textbf{0.712} & \textbf{0.230} \\
+\midrule
+GPT-5 mini & Human & \underline{0.447} & \underline{0.680} & \underline{0.475} & 0.528 & \underline{0.320} \\
+GPT-5 mini & AutoCalibrate & \textbf{0.539} & \textbf{0.730} & \textbf{0.580} & \textbf{0.578} & \textbf{0.270} \\
+GPT-5 mini & \textbf{Ours} & 0.348 & 0.650 & 0.367 & 0.493 & 0.360 \\
+GPT-5 mini & \textbf{Ours from simplest} & 0.394 & 0.640 & 0.391 & \underline{0.545} & 0.370 \\
+\midrule
+Qwen3-80B-A3B & Human & 0.364 & 0.470 & \underline{0.476} & 0.423 & 0.560 \\
+Qwen3-80B-A3B & AutoCalibrate & \underline{0.456} & 0.580 & 0.464 & \textbf{0.545} & 0.440 \\
+Qwen3-80B-A3B & \textbf{Ours} & 0.452 & \underline{0.590} & 0.468 & 0.516 & \underline{0.420} \\
+Qwen3-80B-A3B & \textbf{Ours from simplest} & \textbf{0.493} & \textbf{0.600} & \textbf{0.502} & \underline{0.544} & \textbf{0.400} \\
+\bottomrule
+\end{tabular}
+\caption{Zero-shot evaluation results on TOEFL11. Bold and underlined values indicate the best and second-best scores for each model.}
+\label{tab:toefl}
+\end{table*}
+
 
 On ASAP P1, our method achieves the highest QWK across all three models, with improvements over the human rubric ranging from +0.092 (Qwen3-80B-A3B) to +0.388 (GPT-5 mini). The most notable case is GPT-5 mini, where the human rubric yields near-chance agreement (QWK\,=\,0.042), but our refined rubric raises QWK to 0.430. Our method also consistently outperforms AutoCalibrate, confirming the benefit of iterative refinement with chain-of-thought rationales over single-pass revision without rationales.
 
@@ -299,26 +355,27 @@ A key practical question is whether rubric refinement can reduce the burden of m
 \begin{table}[t]
 \centering
 \small
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}llrr@{}}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{llrr}
 \toprule
-\textbf{Dataset} & \textbf{LLM} & \textbf{Simplest} & \textbf{$\Delta$ vs.\ Human} \\
- & & \textbf{+ Ours} & \textbf{Expert} \\
+\textbf{Dataset} & \textbf{LLM} & \textbf{Ours from} & \textbf{$\Delta$ vs.\ expert} \\
+ & & \textbf{simplest} & \textbf{rubric} \\
 \midrule
-ASAP P1 & GPT-5 mini & 0.285 & +0.243 \\
- & Gemini 3 Flash & 0.556 & +0.129 \\
- & Qwen3-80B-A3B & 0.442 & +0.322 \\
+ASAP & GPT-5 mini & 0.314 & +0.272 \\
+ & Gemini 3 Flash & 0.580 & +0.153 \\
+ & Qwen3-80B-A3B & 0.154 & +0.034 \\
 \midrule
-ASAP 2.0 & GPT-5 mini & 0.377 & +0.019 \\
- & Gemini 3 Flash & 0.649 & +0.036 \\
- & Qwen3-80B-A3B & 0.669 & +0.094 \\
+ASAP 2.0 & GPT-5 mini & 0.452 & +0.094 \\
+ & Gemini 3 Flash & 0.651 & +0.038 \\
+ & Qwen3-80B-A3B & 0.509 & $-$0.066 \\
 \midrule
-TOEFL11 & GPT-5 mini & 0.527 & +0.080 \\
- & Gemini 3 Flash & 0.493 & $-$0.082 \\
- & Qwen3-80B-A3B & 0.334 & $-$0.030 \\
+TOEFL11 & GPT-5 mini & 0.394 & $-$0.053 \\
+ & Gemini 3 Flash & 0.663 & +0.088 \\
+ & Qwen3-80B-A3B & 0.493 & +0.129 \\
 \bottomrule
-\end{tabular}
-\caption{QWK comparison: rubrics refined from the simplest seed (``Based on the response's content, rate the response on a scale of 1 to 6.'') vs.\ the rubric written by human experts. $\Delta$ denotes QWK improvement over the Human Expert baseline.}
+\end{tabular}%
+}
+\caption{QWK comparison: rubrics refined from the simplest seed (``Based on the response's content, rate the response on a scale of 1 to 6.'') vs.\ the rubric written by human experts. $\Delta$ denotes QWK improvement over the baseline using human expert rubrics.}
 \label{tab:simplest}
 \end{table}
 
@@ -382,21 +439,21 @@ An important question for practical deployment is whether rubrics optimized for 
 \textbf{Source $\backslash$ Evaluator} & \textbf{GPT-5 mini} & \textbf{Gemini 3 Flash} & \textbf{Qwen3-80B-A3B} \\
 \multicolumn{4}{l}{\textit{ASAP P1}} \\
 Human & 0.042 & 0.427 & 0.121 \\
-GPT-5 mini & \textbf{\cellcolor{gray!20}0.430} & 0.440 & 0.128 \\
-Gemini 3 Flash & 0.210 & \textbf{\cellcolor{gray!20}0.576} & \textbf{0.524} \\
-Qwen3-80B-A3B & 0.001 & 0.365 & \cellcolor{gray!20}0.213 \\
+GPT-5 mini & \textbf{\cellcolor{gray!20}0.429} & 0.424 & \textbf{0.369} \\
+Gemini 3 Flash & 0.235 & \textbf{\cellcolor{gray!20}0.643} & 0.355 \\
+Qwen3-80B-A3B & 0.060 & 0.297 & \cellcolor{gray!20}0.339 \\
 \midrule
 \multicolumn{4}{l}{\textit{ASAP 2.0}} \\
-Human & 0.358 & 0.613 & 0.575 \\
-GPT-5 mini & \textbf{\cellcolor{gray!20}0.466} & \textbf{0.688} & 0.199 \\
-Gemini 3 Flash & 0.373 & \cellcolor{gray!20}0.639 & 0.463 \\
-Qwen3-80B-A3B & 0.264 & 0.480 & \textbf{\cellcolor{gray!20}0.664} \\
+Human & 0.358 & 0.613 & \textbf{0.575} \\
+GPT-5 mini & \cellcolor{gray!20}0.398 & \textbf{0.651} & 0.329 \\
+Gemini 3 Flash & \textbf{0.399} & \cellcolor{gray!20}0.639 & 0.312 \\
+Qwen3-80B-A3B & 0.321 & 0.644 & \cellcolor{gray!20}0.558 \\
 \midrule
 \multicolumn{4}{l}{\textit{TOEFL11}} \\
-Human & \textbf{0.447} & \textbf{0.574} & 0.364 \\
-GPT-5 mini & \cellcolor{gray!20}0.329 & 0.460 & 0.316 \\
-Gemini 3 Flash & 0.140 & \cellcolor{gray!20}0.471 & \textbf{0.485} \\
-Qwen3-80B-A3B & 0.055 & 0.461 & \cellcolor{gray!20}0.474 \\
+Human & 0.447 & \textbf{0.574} & 0.364 \\
+GPT-5 mini & \textbf{\cellcolor{gray!20}0.485} & 0.557 & 0.341 \\
+Gemini 3 Flash & 0.360 & \cellcolor{gray!20}0.477 & 0.483 \\
+Qwen3-80B-A3B & 0.107 & 0.376 & \textbf{\cellcolor{gray!20}0.499} \\
 \bottomrule
 \end{tabular}
 \caption{Cross-model rubric transferability (QWK). Each cell shows QWK when the rubric optimized by the \textit{source} model (row) is used by the \textit{evaluator} model (column). Shaded diagonal cells denote same-model results. ``Human'' row shows the unrefined human rubric baseline. Bold values indicate the best QWK per evaluator model within each dataset.}
@@ -796,39 +853,39 @@ Illustrative heuristics (short mapping):
 \toprule
 LLM & Rubric written by & QWK & Accuracy & Spearman & Macro-F1 & MAE \\
 \midrule
-Gemini 3 Flash & Human & 0.613 & \underline{0.440} & 0.657 & \underline{0.270} & \underline{0.610} \\
-Gemini 3 Flash & AutoCalibrate & \textbf{0.651} & \textbf{0.490} & \underline{0.697} & \textbf{0.308} & \textbf{0.540} \\
-Gemini 3 Flash & \textbf{Ours} & \underline{0.639} & 0.420 & \textbf{0.754} & 0.226 & 0.620 \\
+Gemini 3 Flash & Human & 0.613 & 0.440 & 0.657 & 0.270 & 0.610 \\
+Gemini 3 Flash & AutoCalibrate & \underline{0.646} & \underline{0.490} & \textbf{0.716} & \underline{0.297} & \underline{0.550} \\
+Gemini 3 Flash & \textbf{Ours} & \textbf{0.700} & \textbf{0.540} & \underline{0.716} & \textbf{0.393} & \textbf{0.520} \\
 \midrule
-GPT-5 mini & Human & \underline{0.358} & 0.350 & \textbf{0.533} & 0.148 & \textbf{0.780} \\
-GPT-5 mini & AutoCalibrate & 0.277 & \underline{0.370} & \underline{0.471} & \underline{0.148} & \underline{0.820} \\
-GPT-5 mini & \textbf{Ours} & \textbf{0.398} & \textbf{0.380} & 0.407 & \textbf{0.195} & \textbf{0.780} \\
+GPT-5 mini & Human & \underline{0.358} & \underline{0.350} & \underline{0.533} & \underline{0.148} & \underline{0.780} \\
+GPT-5 mini & AutoCalibrate & 0.338 & 0.340 & 0.514 & 0.142 & 0.790 \\
+GPT-5 mini & \textbf{Ours} & \textbf{0.537} & \textbf{0.440} & \textbf{0.618} & \textbf{0.239} & \textbf{0.620} \\
 \midrule
-Qwen3-80B-A3B & Human & \textbf{0.575} & \underline{0.270} & \textbf{0.668} & \underline{0.272} & \underline{0.890} \\
-Qwen3-80B-A3B & AutoCalibrate & 0.544 & \underline{0.270} & 0.577 & 0.259 & 0.950 \\
-Qwen3-80B-A3B & \textbf{Ours} & \underline{0.558} & \textbf{0.340} & \underline{0.603} & \textbf{0.325} & \textbf{0.850} \\
+Qwen3-80B-A3B & Human & 0.575 & 0.270 & \textbf{0.668} & 0.272 & 0.890 \\
+Qwen3-80B-A3B & AutoCalibrate & \underline{0.595} & \underline{0.290} & 0.643 & \textbf{0.310} & \underline{0.850} \\
+Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.636} & \textbf{0.410} & \underline{0.645} & \underline{0.295} & \textbf{0.660} \\
 \bottomrule
 \end{tabular}
 \end{table*}
 
 \begin{table*}[t]
 \centering
-\caption{Evaluation results for ASAP P1}
+\caption{Evaluation results for ASAP}
 \begin{tabular}{llrrrrr}
 \toprule
 LLM & Rubric written by & QWK & Accuracy & Spearman & Macro-F1 & MAE \\
 \midrule
-Gemini 3 Flash & Human & 0.427 & \underline{0.404} & 0.568 & \underline{0.307} & \underline{0.697} \\
-Gemini 3 Flash & AutoCalibrate & \underline{0.452} & 0.390 & \underline{0.597} & 0.288 & 0.710 \\
-Gemini 3 Flash & \textbf{Ours} & \textbf{0.643} & \textbf{0.590} & \textbf{0.624} & \textbf{0.558} & \textbf{0.410} \\
+Gemini 3 Flash & Human & 0.427 & 0.404 & \underline{0.568} & 0.307 & 0.697 \\
+Gemini 3 Flash & AutoCalibrate & \underline{0.489} & \underline{0.590} & 0.493 & \underline{0.382} & \underline{0.460} \\
+Gemini 3 Flash & \textbf{Ours} & \textbf{0.646} & \textbf{0.680} & \textbf{0.656} & \textbf{0.595} & \textbf{0.330} \\
 \midrule
 GPT-5 mini & Human & 0.042 & 0.110 & 0.151 & 0.058 & 1.430 \\
-GPT-5 mini & AutoCalibrate & \underline{0.117} & \underline{0.250} & \underline{0.280} & \underline{0.121} & \underline{1.010} \\
-GPT-5 mini & \textbf{Ours} & \textbf{0.429} & \textbf{0.455} & \textbf{0.422} & \textbf{0.274} & \textbf{0.596} \\
+GPT-5 mini & AutoCalibrate & \underline{0.390} & \underline{0.410} & \underline{0.396} & \underline{0.231} & \underline{0.620} \\
+GPT-5 mini & \textbf{Ours} & \textbf{0.480} & \textbf{0.450} & \textbf{0.510} & \textbf{0.271} & \textbf{0.600} \\
 \midrule
-Qwen3-80B-A3B & Human & \underline{0.121} & \underline{0.130} & \underline{0.323} & \underline{0.123} & \underline{1.540} \\
-Qwen3-80B-A3B & AutoCalibrate & 0.073 & 0.110 & 0.217 & 0.076 & 1.620 \\
-Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.339} & \textbf{0.470} & \textbf{0.399} & \textbf{0.344} & \textbf{0.730} \\
+Qwen3-80B-A3B & Human & 0.121 & 0.130 & 0.323 & 0.123 & 1.540 \\
+Qwen3-80B-A3B & AutoCalibrate & \underline{0.240} & \underline{0.310} & \underline{0.458} & \underline{0.233} & \underline{1.100} \\
+Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.473} & \textbf{0.520} & \textbf{0.490} & \textbf{0.402} & \textbf{0.570} \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -840,71 +897,17 @@ Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.339} & \textbf{0.470} & \textbf{0.399}
 \toprule
 LLM & Rubric written by & QWK & Accuracy & Spearman & Macro-F1 & MAE \\
 \midrule
-Gemini 3 Flash & Human & \underline{0.574} & \underline{0.690} & \underline{0.621} & \textbf{0.636} & \underline{0.320} \\
-Gemini 3 Flash & AutoCalibrate & \textbf{0.597} & 0.680 & \textbf{0.648} & \underline{0.636} & \underline{0.320} \\
-Gemini 3 Flash & \textbf{Ours} & 0.477 & \textbf{0.710} & 0.519 & 0.550 & \textbf{0.290} \\
+Gemini 3 Flash & Human & \textbf{0.574} & \underline{0.690} & \textbf{0.621} & \textbf{0.636} & \underline{0.320} \\
+Gemini 3 Flash & AutoCalibrate & 0.510 & 0.650 & 0.528 & 0.591 & 0.360 \\
+Gemini 3 Flash & \textbf{Ours} & \underline{0.557} & \textbf{0.720} & \underline{0.568} & \underline{0.630} & \textbf{0.280} \\
 \midrule
-GPT-5 mini & Human & \underline{0.447} & \underline{0.680} & 0.475 & 0.528 & \underline{0.320} \\
-GPT-5 mini & AutoCalibrate & 0.419 & 0.620 & \underline{0.482} & \underline{0.542} & 0.410 \\
-GPT-5 mini & \textbf{Ours} & \textbf{0.485} & \textbf{0.700} & \textbf{0.509} & \textbf{0.571} & \textbf{0.300} \\
+GPT-5 mini & Human & \underline{0.447} & \underline{0.680} & \underline{0.475} & \underline{0.528} & \underline{0.320} \\
+GPT-5 mini & AutoCalibrate & \textbf{0.539} & \textbf{0.730} & \textbf{0.580} & \textbf{0.578} & \textbf{0.270} \\
+GPT-5 mini & \textbf{Ours} & 0.348 & 0.650 & 0.367 & 0.493 & 0.360 \\
 \midrule
-Qwen3-80B-A3B & Human & 0.364 & 0.470 & \underline{0.476} & 0.423 & 0.560 \\
-Qwen3-80B-A3B & AutoCalibrate & \underline{0.428} & \underline{0.570} & 0.454 & \underline{0.533} & \underline{0.460} \\
-Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.499} & \textbf{0.650} & \textbf{0.515} & \textbf{0.573} & \textbf{0.360} \\
-\bottomrule
-\end{tabular}
-\end{table*}
-
-\begin{table}[t]
-\centering
-\small
-\caption{QWK comparison: rubrics refined from the simplest seed (``Based on the response's content, rate the response on a scale of 1 to 6.'') vs.\ the rubric written by human experts. $\Delta$ denotes QWK improvement over the Human Expert baseline.}
-\label{tab:simplest}
-\begin{tabular}{llrr}
-\toprule
-\textbf{Dataset} & \textbf{LLM} & \textbf{Simplest} & \textbf{$\Delta$ vs.\ Human} \\
- & & \textbf{+ Ours} & \textbf{Expert} \\
-\midrule
-ASAP P1 & GPT-5 mini & 0.265 & +0.224 \\
- & Gemini 3 Flash & 0.642 & +0.214 \\
- & Qwen3-80B-A3B & 0.435 & +0.314 \\
-\midrule
-ASAP 2.0 & GPT-5 mini & 0.370 & +0.012 \\
- & Gemini 3 Flash & 0.669 & +0.056 \\
- & Qwen3-80B-A3B & 0.626 & +0.051 \\
-\midrule
-TOEFL11 & GPT-5 mini & 0.505 & +0.059 \\
- & Gemini 3 Flash & 0.519 & $-$0.055 \\
- & Qwen3-80B-A3B & 0.524 & +0.160 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table*}[t]
-\centering
-\small
-\caption{Cross-model rubric transferability (QWK). Each cell shows QWK when the rubric optimized by the \textit{source} model (row) is used by the \textit{evaluator} model (column). Shaded diagonal cells denote same-model results. ``Human'' row shows the unrefined human rubric baseline. Bold values indicate the best QWK per evaluator model within each dataset.}
-\label{tab:cross_model}
-\begin{tabular}{lrrr}
-\toprule
-\textbf{Source $\backslash$ Evaluator} & \textbf{GPT-5 mini} & \textbf{Gemini 3 Flash} & \textbf{Qwen3-80B-A3B} \\
-\multicolumn{4}{l}{\textit{ASAP P1}} \\
-Human & 0.042 & 0.427 & 0.121 \\
-GPT-5 mini & \textbf{\cellcolor{gray!20}0.429} & 0.424 & \textbf{0.369} \\
-Gemini 3 Flash & 0.235 & \textbf{\cellcolor{gray!20}0.643} & 0.355 \\
-Qwen3-80B-A3B & 0.060 & 0.297 & \cellcolor{gray!20}0.339 \\
-\midrule
-\multicolumn{4}{l}{\textit{ASAP 2.0}} \\
-Human & 0.358 & 0.613 & \textbf{0.575} \\
-GPT-5 mini & \cellcolor{gray!20}0.398 & \textbf{0.651} & 0.329 \\
-Gemini 3 Flash & \textbf{0.399} & \cellcolor{gray!20}0.639 & 0.312 \\
-Qwen3-80B-A3B & 0.321 & 0.644 & \cellcolor{gray!20}0.558 \\
-\midrule
-\multicolumn{4}{l}{\textit{TOEFL11}} \\
-Human & 0.447 & \textbf{0.574} & 0.364 \\
-GPT-5 mini & \textbf{\cellcolor{gray!20}0.485} & 0.557 & 0.341 \\
-Gemini 3 Flash & 0.360 & \cellcolor{gray!20}0.477 & 0.483 \\
-Qwen3-80B-A3B & 0.107 & 0.376 & \textbf{\cellcolor{gray!20}0.499} \\
+Qwen3-80B-A3B & Human & 0.364 & 0.470 & \textbf{0.476} & 0.423 & 0.560 \\
+Qwen3-80B-A3B & AutoCalibrate & \textbf{0.456} & \underline{0.580} & 0.464 & \textbf{0.545} & \underline{0.440} \\
+Qwen3-80B-A3B & \textbf{Ours} & \underline{0.452} & \textbf{0.590} & \underline{0.468} & \underline{0.516} & \textbf{0.420} \\
 \bottomrule
 \end{tabular}
 \end{table*}
