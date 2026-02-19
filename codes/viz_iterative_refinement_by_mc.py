@@ -1,7 +1,7 @@
 """
 Visualize train QWK improvement over optimization iterations,
 grouped by Monte Carlo (MC) run count.
-Step 0 is shown as a horizontal dotted line (human expert baseline).
+Step 0 is included in the plot line. Values are cumulative max up to each step.
 """
 
 import os
@@ -168,31 +168,21 @@ for dataset in datasets_available:
         # (if there are multiple with same mc, pick the one with most steps)
         mc_groups = sub_df.groupby("mc")
 
-        # Baseline: average Step 0 QWK across all MC runs
-        all_step0 = [row["qwk_values"][0] for _, row in sub_df.iterrows()]
-        baseline_qwk = np.mean(all_step0)
-        ax.axhline(
-            y=baseline_qwk,
-            color="gray",
-            linestyle="--",
-            linewidth=1.0,
-            label="Step 0 (Human Expert Rubric)",
-            zorder=1,
-        )
-
         for mc_val, mc_df in sorted(mc_groups, key=lambda x: x[0]):
             # Pick the run with most steps for this MC
             best_row = mc_df.loc[mc_df["n_steps"].idxmax()]
             qwk_vals = best_row["qwk_values"]
-            steps = list(range(len(qwk_vals)))
+            # Cumulative max: at each step, show the best QWK seen so far
+            cum_max = np.maximum.accumulate(qwk_vals)
+            steps = list(range(len(cum_max)))
 
             color = MC_COLORS.get(mc_val, "black")
             marker = MC_MARKERS.get(mc_val, "x")
 
-            # Plot optimization curve (steps 1..N)
+            # Plot full optimization curve including step 0
             ax.plot(
-                steps[1:],
-                qwk_vals[1:],
+                steps,
+                cum_max,
                 color=color,
                 marker=marker,
                 markersize=3,
@@ -201,12 +191,12 @@ for dataset in datasets_available:
                 zorder=2,
             )
 
-        ax.set_xlabel("Optimization Step")
+        ax.set_xlabel("Refinement Step")
         if col == 0:
-            ax.set_ylabel("Train QWK")
+            ax.set_ylabel("Best Training QWK")
         # ax.set_title(MODEL_DISPLAY.get(model, model))
         max_steps = max(len(r) for r in sub_df["qwk_values"])
-        ax.set_xticks(range(1, max_steps))
+        ax.set_xticks(range(0, max_steps))
         ax.grid(axis="y", alpha=0.3)
 
     # fig.suptitle(
@@ -215,20 +205,15 @@ for dataset in datasets_available:
     #     y=1.02,
     # )
 
-    # Shared legend: MC lines first row, baseline second row
+    # Shared legend (inside plot)
     handles, labels = axes[0, 0].get_legend_handles_labels()
-    # Reorder for column-major legend: [MC=1, baseline, MC=4]
-    # ncol=2 fills col-major → row 1: MC=1, MC=4 / row 2: baseline
-    reorder = [1, 0, 2]
-    handles = [handles[i] for i in reorder]
-    labels = [labels[i] for i in reorder]
-    fig.legend(
+    axes[0, 0].legend(
         handles, labels,
-        loc="lower center",
-        bbox_to_anchor=(0.5, -0.18),
-        ncol=2,
-        frameon=False,
-        columnspacing=1.0,
+        loc="lower right",
+        ncol=1,
+        frameon=True,
+        framealpha=0.8,
+        edgecolor="none",
         handletextpad=0.4,
     )
 

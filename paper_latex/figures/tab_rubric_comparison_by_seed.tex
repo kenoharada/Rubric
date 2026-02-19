@@ -1,0 +1,32 @@
+\begin{table*}[t]
+\centering
+\small
+\caption{Rubric comparison by seed prompt type. \textit{Seed} and \textit{Refined} are word counts of the initial and refined rubrics; \textit{$\Delta$\,Words} is the word count change. \textit{Overlap} is the percentage of refined rubric words that also appear in the seed rubric. $\Delta$\,QWK is the test-set QWK improvement after refinement.}
+\label{tab:rubric_comparison_by_seed}
+\begin{tabular}{lll rrr r r}
+\toprule
+Dataset & Model & Prompt & Seed & Refined & $\Delta$\,Words & Overlap (\%) & $\Delta$\,QWK \\
+\midrule
+  ASAP & Gemini 3 Flash & expert & 352 & 920 & +568 & 19.8 & +0.219 \\
+  ASAP & Gemini 3 Flash & simplest & 15 & 478 & +463 & 1.5 & +0.227 \\
+  ASAP & GPT-5 mini & expert & 352 & 1,696 & +1,344 & 5.1 & +0.438 \\
+  ASAP & GPT-5 mini & simplest & 15 & 1,719 & +1,704 & 0.6 & +0.266 \\
+  ASAP & Qwen3 Next & expert & 352 & 1,925 & +1,573 & 12.3 & +0.352 \\
+  ASAP & Qwen3 Next & simplest & 15 & 1,026 & +1,011 & 1.5 & +0.153 \\
+\midrule
+  ASAP 2.0 & Gemini 3 Flash & expert & 688 & 624 & -64 & 41.0 & +0.087 \\
+  ASAP 2.0 & Gemini 3 Flash & simplest & 15 & 441 & +426 & 1.6 & +0.063 \\
+  ASAP 2.0 & GPT-5 mini & expert & 688 & 1,632 & +944 & 1.1 & +0.179 \\
+  ASAP 2.0 & GPT-5 mini & simplest & 15 & 1,672 & +1,657 & 0.5 & -0.080 \\
+  ASAP 2.0 & Qwen3 Next & expert & 688 & 1,758 & +1,070 & 38.5 & +0.061 \\
+  ASAP 2.0 & Qwen3 Next & simplest & 15 & 530 & +515 & 2.8 & -0.125 \\
+\midrule
+  TOEFL11 & Gemini 3 Flash & expert & 250 & 430 & +180 & 30.9 & -0.018 \\
+  TOEFL11 & Gemini 3 Flash & simplest & 250 & 510 & +260 & 24.5 & +0.042 \\
+  TOEFL11 & GPT-5 mini & expert & 250 & 2,384 & +2,134 & 3.3 & -0.099 \\
+  TOEFL11 & GPT-5 mini & simplest & 250 & 1,486 & +1,236 & 2.4 & -0.039 \\
+  TOEFL11 & Qwen3 Next & expert & 250 & 637 & +387 & 18.8 & +0.088 \\
+  TOEFL11 & Qwen3 Next & simplest & 250 & 884 & +634 & 13.6 & +0.132 \\
+\bottomrule
+\end{tabular}
+\end{table*}

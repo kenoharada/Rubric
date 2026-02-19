@@ -104,8 +104,8 @@ BATCH_SIZES_TO_PLOT = [
     # "2-4-8",
 ]
 
-# How many delta steps to show (e.g. 3 means Δ0→1, Δ1→2, Δ2→3)
-N_DELTAS = 5
+# Step pairs to show: each tuple is (from_step, to_step)
+STEP_PAIRS = [(0, 1), (1, 3), (3, 5)]
 
 # Okabe-Ito colorblind-friendly palette
 DATASET_COLORS = {
@@ -152,7 +152,7 @@ df = pd.DataFrame(records)
 print(f"Found {len(df)} expert optimization runs")
 
 # ---------- Filter ----------
-df = df[df["n_steps"] >= N_DELTAS]
+df = df[df["n_steps"] >= max(t for _, t in STEP_PAIRS)]
 df = df[df["dataset"].isin(DATASETS_TO_PLOT)]
 df = df[df["model"].isin(MODELS_TO_PLOT)]
 df = df[df["mc"].isin(MC_TO_PLOT)]
@@ -169,19 +169,19 @@ if len(df) == 0:
     exit()
 
 # ---------- compute deltas ----------
-# For each run, compute delta[i] = qwk[i+1] - qwk[i]
-# Then average deltas across all runs (models × MC) per dataset
-delta_by_dataset = {}  # dataset -> list of length N_DELTAS (mean delta per step)
+# For each step pair (a, b), compute qwk[b] - qwk[a]
+# Then average across all runs (models × MC) per dataset
+delta_by_dataset = {}  # dataset -> array of length len(STEP_PAIRS)
 
 for dataset in DATASETS_TO_PLOT:
     ds_df = df[df["dataset"] == dataset]
     if len(ds_df) == 0:
         continue
-    all_deltas = []  # list of arrays, each of length N_DELTAS
+    all_deltas = []
     for _, row in ds_df.iterrows():
         qwk = row["qwk_values"]
-        deltas = [qwk[i + 1] - qwk[i] for i in range(min(N_DELTAS, len(qwk) - 1))]
-        if len(deltas) == N_DELTAS:
+        deltas = [max(qwk[a:b+1]) - max(qwk[:a+1]) for a, b in STEP_PAIRS if b < len(qwk)]
+        if len(deltas) == len(STEP_PAIRS):
             all_deltas.append(deltas)
     if all_deltas:
         mean_deltas = np.mean(all_deltas, axis=0)
@@ -195,8 +195,9 @@ for ds, deltas in delta_by_dataset.items():
 datasets_with_data = [ds for ds in DATASETS_TO_PLOT if ds in delta_by_dataset]
 n_datasets = len(datasets_with_data)
 
-x_labels = [f"$s_{{{i}}}\\!\\to\\!s_{{{i+1}}}$" for i in range(N_DELTAS)]
-x = np.arange(N_DELTAS)
+n_pairs = len(STEP_PAIRS)
+x_labels = [f"$s_{{{a}}}\\!\\to\\!s_{{{b}}}$" for a, b in STEP_PAIRS]
+x = np.arange(n_pairs)
 bar_width = 0.8 / n_datasets
 
 fig, ax = plt.subplots(figsize=fig_size)

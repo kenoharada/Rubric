@@ -1,0 +1,25 @@
+\colorlet{rpTypeRule}{red!80!black}
+\colorlet{rpTypeEvidence}{blue!80!black}
+\colorlet{rpTypeWriting}{teal!80!black}
+\begin{figure*}[t]
+\centering
+\begin{tcolorbox}[colback=white,colframe=black!25,title=Pattern Legend,fonttitle=\bfseries\small,fontupper=\scriptsize,boxsep=1pt,left=2pt,right=2pt,top=2pt,bottom=2pt]
+\textcolor{rpTypeEvidence}{\textbf{Evidence Handling}} (examples, repetition, and caps) \quad \textcolor{rpTypeWriting}{\textbf{Writing Quality}} (organization and grammar/mechanics)
+\end{tcolorbox}
+\vspace{2mm}
+\begin{minipage}[t]{0.485\textwidth}
+\begin{tcolorbox}[colback=white,colframe=black!25,title=Initial Rubric,fonttitle=\bfseries\small,fontupper=\scriptsize,breakable]
+\ttfamily
+Based on the response's content, rate the response on a scale of 1 to 6.
+\end{tcolorbox}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.485\textwidth}
+\begin{tcolorbox}[colback=white,colframe=black!25,title=Optimized Rubric,fonttitle=\bfseries\small,fontupper=\scriptsize,breakable]
+\ttfamily
+\par Score 1: The response is severely deficient in all areas. It contains pervasive, uncorrected grammatical and \textcolor{rpTypeWriting}{spelling} errors that render most or all of the content unintelligible. Ideas are either absent, completely incoherent, or consist of fragmented phrases with no logical progression. Factual inaccuracies are numerous and fundamental. The response fails to demonstrate any meaningful understanding of the prompt or topic. Language issues are so severe that even basic comprehension of intent is impossible, and no coherent argument or relevant content can be discerned.\par \par Score 2: The response attempts to address the topic but is severely hampered by language issues. Grammatical errors, mis\textcolor{rpTypeWriting}{spelling}s, and awkward phrasing are frequent and persistent, significantly impeding clarity and comprehension. Ideas are partially present but poorly organized, underdeveloped, or contradictory. While some relevant content may be identifiable, it is buried in linguistic noise. The response may contain factual distortions, incomplete sentences, or illogical \textcolor{rpTypeWriting}{transition}s that prevent meaningful interpretation. Analysis is absent or reduced to isolated, disconnected phrases. The response does not demonstrate consistent understanding of the prompt, and its structure fails to support any coherent line of reasoning.\par \par Score 3: The response demonstrates a basic understanding of the topic with some relevant ideas, though language control is weak. Errors in \textcolor{rpTypeWriting}{grammar}, \textcolor{rpTypeWriting}{spelling}, and syntax are common but do not completely obscure meaning. Ideas are loosely connected and may lack depth or sophistication, but the central argument or observations are discernible. The response may include limited \textcolor{rpTypeEvidence}{evidence} or examples, though their use is imprecise or poorly integrated. Structure is rudimentary, and tone is inconsistent. While the response meets minimal expectations for \textcolor{rpTypeWriting}{coherence}, it lacks analytical development, nuanced interpretation, or effective integration of \textcolor{rpTypeEvidence}{evidence}.\par \par Score 4: The response presents a clear, mostly coherent argument with relevant ideas and sufficient development. Language use is generally effective, with occasional errors that do not impede understanding. Structure is logical, and \textcolor{rpTypeEvidence}{evidence} is used to support claims, though analysis may be superficial or uneven. The response demonstrates solid comprehension of the prompt, engages with the text meaningfully, and maintains an appropriate academic tone. While insight may be limited or predictable, the response avoids major factual inaccuracies, repetitive phrasing, or structural confusion. Language issues are minor and do not distract from the argument's clarity.\par \par Score 5: The response is well-developed, clearly organized, and effectively communicates a nuanced understanding of the topic. Language is precise and mostly error-free, with sophisticated sentence structure and appropriate academic tone. \textcolor{rpTypeEvidence}{Evidence} is well-chosen and thoughtfully integrated. Analysis goes beyond description to offer insight, connection, or critical evaluation. The response demonstrates original thinking, consistent depth, and strong command of rhetorical conventions. Minor stylistic imperfections may exist but do not detract from overall effectiveness.\par 
+\end{tcolorbox}
+\end{minipage}
+\caption{Pattern-highlighted rubric comparison (ASAP2, qwen\_qwen3-next-80b-a3b-instruct, base\_simplest\_True\_train100\_iteration5\_top3\_bs4-8-12\_mc4). Matched spans are color-coded by regex pattern. Color types: \textcolor{rpTypeEvidence}{\textbf{Evidence Handling}} (examples, repetition, and caps); \textcolor{rpTypeWriting}{\textbf{Writing Quality}} (organization and grammar/mechanics).}
+\label{fig:rubric_pattern_ASAP2_qwen_qwen3_next_80b_a3b_instruct_base_simplest_True_train100_iteration5_top3_bs4_8_12_mc4}
+\end{figure*}

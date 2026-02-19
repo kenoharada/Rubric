@@ -149,31 +149,27 @@ We evaluate our method on three datasets (ASAP, ASAP 2.0, and TOEFL11) with thre
 \begin{table*}[t]
   \centering
   \resizebox{\textwidth}{!}{%
-  \begin{tabular}{lccccc}
+  \begin{tabular}{lcccccc}
     \toprule
     \textbf{Study} &
-    \textbf{Human-labeled} &
-    \textbf{Texts being} &
-    \textbf{Source passages used} &
-    \textbf{Model-predicted} &
-    \textbf{Rationales for} \\
-    & \textbf{scores} &
-    \textbf{evaluated} &
-    \textbf{to compose responses} &
-    \textbf{scores} &
-    \textbf{predicted scores} \\
+    \textbf{Scores} &
+    \textbf{Texts} &
+    \textbf{Sources} &
+    \textbf{Predictions} &
+    \textbf{Rationales} &
+    \textbf{Iterative} \\
     \midrule
-    HD-Eval (\citet{liu-etal-2024-hd}) & $\checkmark$ &  &  &  &  \\
-    MTS (\citet{lee-etal-2024-unleashing}) &  &  & $\checkmark$ &  &  \\
-    \citet{xie2024gradelikehuman} & $\checkmark$ & $\checkmark$ &  &  &  \\
-    ActiveCritic (\citet{xu2025activecritics}) & $\checkmark$ & $\checkmark$ & $\checkmark$ &  &  \\
-    AutoCalibrate (\citet{liu-etal-2024-calibrating}) & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  \\
+    HD-Eval (\citet{liu-etal-2024-hd}) & $\checkmark$ &  &  &  &  &  $\checkmark$\\
+    MTS (\citet{lee-etal-2024-unleashing}) &  &  & $\checkmark$ &  &  &  \\
+    \citet{xie2024gradelikehuman} & $\checkmark$ & $\checkmark$ &  &  &  &  \\
+    ActiveCritic (\citet{xu2025activecritics}) & $\checkmark$ & $\checkmark$ & $\checkmark$ &  &  &  \\
+    AutoCalibrate (\citet{liu-etal-2024-calibrating}) & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ &  &  \\
     \midrule
     \textbf{Ours} &
-    \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} \\
+    \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} \\
     \bottomrule
   \end{tabular}}
-  \caption{Used signals to rewrite or refine evaluation rubrics in prior work vs. ours. Our method uniquely uses all signals, including model-generated rationales for model-predicted scores. \textbf{Texts being evaluated} are the essays/answers/responses that receive scores. \textbf{Source passages used to compose responses} are the reference sentences/passages that the writer must consult when producing the evaluated text (e.g., source documents, provided essay themes). \textbf{Rationales} are models' justifications accompanying model-predicted scores.}
+  \caption{Comparison of signals and strategies used to refine evaluation rubrics. \textbf{Scores}: human-labeled scores. \textbf{Texts}: texts being evaluated (essays/answers/responses that receive scores). \textbf{Sources}: source passages used to compose responses (e.g., source documents, provided essay themes). \textbf{Predictions}: model-predicted scores. \textbf{Rationales}: model-generated justifications accompanying predicted scores. \textbf{Iterative}: whether the method iteratively refines rubrics over multiple rounds. Our method uniquely leverages all five signals and performs iterative refinement.}
 \label{tab:rubric_rewrite_data_requirements}
 \end{table*}
 
@@ -372,21 +368,21 @@ TOEFL11 & GPT-5 mini & 0.394 & $-$0.053 \\
 % To understand how refinement changes rubric content
 
 \paragraph{Iterative Refinement and Monte Carlo Effects}
-To analyze the effect of iterative refinement and Monte Carlo trials, which controls depth and breadth of exploration, respectively, we track the training QWK of the best candidate rubric at each iteration. Figure~\ref{fig:training_qwk} shows these trajectories on ASAP 2.0. By using large number of Monte Carlo trials, our method explores a wide variety of rubric modifications at each iteration, which leads to steady improvements in training QWK across iterations for all three models. The steepest gains tend to occur in early iterations, suggesting that initial rounds of refinement identify and correct major scoring biases, while later iterations fine-tune the rubric for incremental gains.
+To analyze the effect of iterative refinement and Monte Carlo trials, which controls depth and breadth of exploration, respectively, we track the best QWK in training dataset at each iteration. Figure~\ref{fig:training_qwk} shows these trajectories of Gemini 3 Flash on ASAP 2.0. By using large number of Monte Carlo trials, our method explores a wide variety of rubric modifications at each iteration, which leads to steady improvements in training QWK across iterations for all three models. 
 
-About gains from iteration, we calculate the stepwise improvement in QWK at each iteration, defined as the difference in training QWK between the best candidate rubric at iteration \(t\) and the best candidate rubric at iteration \(t-1\). Figure~\ref{fig:qwk_gains} plots these stepwise improvements across iterations for all three datasets averaging across models. The largest gains tend to occur in early iterations, with diminishing returns in later iterations.
+About gains from iteration, we calculate the stepwise improvement in QWK at each iteration, defined as the difference in best training QWK between steps. Figure~\ref{fig:qwk_gains} plots these stepwise improvements across iterations for all three datasets averaging across models. The largest gains tend to occur in early iterations, with diminishing returns in later iterations.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.9\linewidth]{figures/fig_iterative_refinement_mc_ASAP2.pdf}
-\caption{Training QWK of the best candidate rubric at each iteration on ASAP 2.0 of Gemini 3 Flash. MC stands for Monte Carlo trials. Using a large number of trials and iterating over multiple rounds of refinement leads to improvements in training QWK.}
+\caption{Best training QWK across iterations of Gemini 3 Flash on ASAP 2.0. MC stands for Monte Carlo trials. By using a large number of Monte Carlo trials, our method explores a wide variety of rubric modifications at each iteration, which leads to improvements in training QWK across iterations.}
 \label{fig:training_qwk}
 \end{figure}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.9\linewidth]{figures/fig_stepwise_improvement.pdf}
-\caption{Stepwise improvement in QWK across iterations on ASAP, ASAP 2.0, and TOEFL11 averaged across all three models. $s_{t-1}\!\to\!s_{t}$ denotes the stepwise improvement, calculated as the difference in training QWK between the best candidate rubric at iteration $t$ and the best candidate rubric at iteration $t-1$. The largest gains tend to occur in early iterations, with diminishing returns in later iterations.}
+\caption{Best training QWK improvement between refinement steps, averaged across models for each dataset. $s_{t-n}\!\to\!s_{t}$ denotes the relative improvement from step $t-n$ to step $t$. The largest gains tend to occur in early iterations.}
 \label{fig:qwk_gains}
 \end{figure}
 
@@ -673,7 +669,7 @@ Based on the response's content, rate the response on a scale of 1 to 6.
 \subsection{Refined rubric (GPT-5~mini, ASAP P1, expert seed)}
 \label{sec:appendix_refined_rubric}
 
-The following is the full text of the rubric refined by GPT-5~mini on ASAP P1 starting from the expert seed rubric, corresponding to the excerpts shown in Figure~\ref{fig:rubric_example}.
+The following is the full text of the rubric refined by GPT-5~mini on ASAP P1 starting from the expert seed rubric, corresponding to the excerpts shown in Figure~\ref{fig:rubric_pattern_asap_1_openai_gpt_5_mini_base_expert_True_train100_iteration5_top3_bs4_8_12_mc4}.
 
 \begin{tcolorbox}[colback=white, colframe=gray, fontupper=\small, breakable]
 Revised Scoring Guideline (with added clarifications to improve rater alignment and reduce common mismatches)
@@ -786,5 +782,32 @@ Illustrative heuristics (short mapping):
 \item Score 5 $\to$ clear, persuasive claim + multiple distinct, specific examples that are explained and connected to the thesis; strong organization; readers are likely convinced.
 \end{itemize}
 \end{tcolorbox}
+
+\begin{table}[t]
+\centering
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{llrrrrr}
+\toprule
+\textbf{Dataset} & \textbf{LLM} & \textbf{Baseline} & \textbf{$N=10$} & \textbf{$N=20$} & \textbf{$N=50$} & \textbf{$N=100$} \\
+\midrule
+ASAP & Gemini 3 Flash & 0.427 & 0.382 & 0.267 & 0.538 & \textbf{0.646} \\
+ & GPT-5 mini & 0.042 & 0.294 & 0.249 & 0.409 & \textbf{0.480} \\
+ & Qwen3-80B-A3B & 0.121 & 0.302 & 0.395 & 0.383 & \textbf{0.473} \\
+\midrule
+ASAP 2.0 & Gemini 3 Flash & 0.613 & 0.366 & \textbf{0.724} & 0.619 & 0.700 \\
+ & GPT-5 mini & 0.358 & 0.322 & \textbf{0.544} & 0.540 & 0.537 \\
+ & Qwen3-80B-A3B & 0.575 & 0.426 & 0.616 & 0.557 & \textbf{0.636} \\
+\bottomrule
+\end{tabular}%
+}
+\caption{Effect of training sample size ($N$) on test QWK. Baseline uses the human expert rubric without optimization. Bold indicates the best QWK among training sizes for each model.}
+\label{tab:train_size}
+\end{table}
+
+\input{figures/tab_rubric_comparison}
+
+% \input{figures/rubric_pattern_highlights/fig_rubric_patterns_all}
+
 
 \end{document}
