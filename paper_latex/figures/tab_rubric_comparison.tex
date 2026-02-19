@@ -1,8 +1,5 @@
 \begin{table*}[t]
 \centering
-\small
-\caption{Quantitative comparison between seed and refined rubrics. The \textit{Seed} rubric is the human-authored rubric used as the starting point for optimization; \textit{Refined} is the rubric after iterative refinement. Word counts are shown for each, with \textit{$\Delta$\,Words} indicating the change. \textit{Overlap} is the percentage of refined rubric words that also appear in the seed rubric (order-preserving longest common subsequence). $\Delta$\,QWK is the improvement in test-set Quadratic Weighted Kappa after refinement (Refined $-$ Seed).}
-\label{tab:rubric_comparison}
 \begin{tabular}{ll rrr r r}
 \toprule
 Dataset & Model & Seed & Refined & $\Delta$\,Words & Overlap (\%) & $\Delta$\,QWK \\
@@ -22,4 +19,6 @@ Dataset & Model & Seed & Refined & $\Delta$\,Words & Overlap (\%) & $\Delta$\,QW
   \multicolumn{2}{l}{\textbf{Average}} & 430 & 1,334 & +904 & 19.0 & +0.145 \\
 \bottomrule
 \end{tabular}
+\caption{Quantitative comparison between seed and refined rubrics. The \textit{Seed} rubric is the human-authored rubric used as the starting point for optimization; \textit{Refined} is the rubric after iterative refinement. Word counts are shown for each, with \textit{$\Delta$\,Words} indicating the change. \textit{Overlap} is the percentage of refined rubric words that also appear in the seed rubric (order-preserving longest common subsequence). $\Delta$\,QWK is the improvement in test-set Quadratic Weighted Kappa after refinement (Refined $-$ Seed).}
+\label{tab:rubric_comparison}
 \end{table*}

@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 """Generate LaTeX tables comparing performance across different training sample sizes."""
 import argparse
-import json
-import math
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-from inference import quality_to_score_for_qwk, rating_to_quality, parse_rating
-from sklearn.metrics import cohen_kappa_score
+from typing import Dict, List, Optional
 
 
 MODEL_LABELS = {
@@ -22,6 +18,11 @@ DATASET_LABELS = {
 }
 
 KNOWN_VENDORS = ("openai", "google", "qwen")
+MODEL_ORDER = [
+    "google/gemini-3-flash-preview",
+    "openai/gpt-5-mini",
+    "qwen/qwen3-next-80b-a3b-instruct",
+]
 
 
 def restore_model_name(model_dir_name: str) -> str:
@@ -32,50 +33,15 @@ def restore_model_name(model_dir_name: str) -> str:
     return model_dir_name
 
 
-def compute_qwk_from_jsonl(results_path: Path, dataset: str) -> Optional[float]:
-    """Compute QWK from results.jsonl file."""
-    if not results_path.exists():
-        return None
-    y_true, y_pred = [], []
-    with results_path.open() as f:
-        for line in f:
-            if not line.strip():
-                continue
-            row = json.loads(line)
-            true_quality = row.get("annotated_score")
-            model_response = row.get("model_response")
-            if model_response is None:
-                continue
-            rating = parse_rating(model_response)
-            if rating is None:
-                continue
-            pred_quality = rating_to_quality(rating, dataset)
-            true_score = quality_to_score_for_qwk(true_quality, dataset)
-            pred_score = quality_to_score_for_qwk(pred_quality, dataset)
-            if true_score is None or pred_score is None:
-                continue
-            y_true.append(true_score)
-            y_pred.append(pred_score)
-    if len(y_true) < 2:
-        return None
-    return cohen_kappa_score(y_true, y_pred, weights='quadratic')
-
-
-def load_metric(path: Path) -> Optional[float]:
-    if not path.exists():
+def get_qwk(run_dir: Path) -> Optional[float]:
+    """Get QWK from qwk.txt in evaluation_results."""
+    qwk_path = run_dir / "qwk.txt"
+    if not qwk_path.exists():
         return None
     try:
-        return float(path.read_text().strip())
+        return float(qwk_path.read_text().strip())
     except ValueError:
         return None
-
-
-def get_qwk(run_dir: Path, dataset: str) -> Optional[float]:
-    """Get QWK from qwk.txt if available, otherwise compute from results.jsonl."""
-    qwk = load_metric(run_dir / "qwk.txt")
-    if qwk is not None:
-        return qwk
-    return compute_qwk_from_jsonl(run_dir / "results.jsonl", dataset)
 
 
 def format_float(value: Optional[float]) -> str:
@@ -84,12 +50,14 @@ def format_float(value: Optional[float]) -> str:
     return f"{value:.3f}"
 
 
-def highlight_best(value: Optional[float], best: Optional[float]) -> str:
+def highlight_value(value: Optional[float], best: Optional[float], second: Optional[float]) -> str:
     rendered = format_float(value)
     if value is None:
         return rendered
     if best is not None and abs(value - best) < 1e-9:
         return f"\\textbf{{{rendered}}}"
+    if second is not None and abs(value - second) < 1e-9:
+        return f"\\underline{{{rendered}}}"
     return rendered
 
 
@@ -122,32 +90,27 @@ def build_table(
     lines.append(" & ".join(header) + " \\\\")
     lines.append("\\midrule")
 
-    model_order = [
-        "google/gemini-3-flash-preview",
-        "openai/gpt-5-mini",
-        "qwen/qwen3-next-80b-a3b-instruct",
-    ]
-
     for di, dataset in enumerate(datasets):
         if di > 0:
             lines.append("\\midrule")
         display_dataset = DATASET_LABELS.get(dataset, dataset)
-        for mi, model in enumerate(model_order):
+        for mi, model in enumerate(MODEL_ORDER):
             if model not in data.get(dataset, {}):
                 continue
             display_model = MODEL_LABELS.get(model, model)
             ds_cell = display_dataset if mi == 0 else ""
 
-            # Find best QWK among train_sizes for this model
+            # Find best and second-best QWK among train_sizes for this model
             qwk_values = [data[dataset][model].get(ts) for ts in train_sizes]
-            valid_values = [v for v in qwk_values if v is not None]
-            best_val = max(valid_values) if valid_values else None
+            valid_values = sorted(set(v for v in qwk_values if v is not None), reverse=True)
+            best_val = valid_values[0] if len(valid_values) >= 1 else None
+            second_val = valid_values[1] if len(valid_values) >= 2 else None
 
             baseline_qwk = baselines.get(dataset, {}).get(model)
             cells = [ds_cell, display_model, format_float(baseline_qwk)]
             for ts in train_sizes:
                 qwk = data[dataset][model].get(ts)
-                cells.append(highlight_best(qwk, best_val))
+                cells.append(highlight_value(qwk, best_val, second_val))
             lines.append(" & ".join(cells) + " \\\\")
 
     lines.append("\\bottomrule")
@@ -155,8 +118,63 @@ def build_table(
     lines.append("}")
     lines.append("\\caption{Effect of training sample size ($N$) on test QWK. "
                   "Baseline uses the human expert rubric without optimization. "
-                  "Bold indicates the best QWK among training sizes for each model.}")
+                  "Bold indicates the best and underline indicates the second-best QWK among training sizes for each model.}")
     lines.append("\\label{tab:train_size}")
+    lines.append("\\end{table}")
+    return "\n".join(lines)
+
+
+def build_dataset_table(
+    data: Dict[str, Dict[str, Dict[int, Optional[float]]]],
+    dataset: str,
+    train_sizes: List[int],
+    baselines: Dict[str, Dict[str, Optional[float]]],
+) -> str:
+    """Build a LaTeX table for a single dataset."""
+    lines = []
+    lines.append("\\begin{table}[t]")
+    lines.append("\\centering")
+    lines.append("\\small")
+    lines.append("\\resizebox{\\columnwidth}{!}{%")
+    col_spec = "l" + "r" * (1 + len(train_sizes))  # model + baseline + train_sizes
+    lines.append(f"\\begin{{tabular}}{{{col_spec}}}")
+    lines.append("\\toprule")
+
+    header = ["\\textbf{LLM}", "\\textbf{Baseline}"]
+    for ts in train_sizes:
+        header.append(f"\\textbf{{$N={ts}$}}")
+    lines.append(" & ".join(header) + " \\\\")
+    lines.append("\\midrule")
+
+    for model in MODEL_ORDER:
+        if model not in data.get(dataset, {}):
+            continue
+        display_model = MODEL_LABELS.get(model, model)
+
+        qwk_values = [data[dataset][model].get(ts) for ts in train_sizes]
+        valid_values = sorted(set(v for v in qwk_values if v is not None), reverse=True)
+        best_val = valid_values[0] if len(valid_values) >= 1 else None
+        second_val = valid_values[1] if len(valid_values) >= 2 else None
+
+        baseline_qwk = baselines.get(dataset, {}).get(model)
+        cells = [display_model, format_float(baseline_qwk)]
+        for ts in train_sizes:
+            qwk = data[dataset][model].get(ts)
+            cells.append(highlight_value(qwk, best_val, second_val))
+        lines.append(" & ".join(cells) + " \\\\")
+
+    lines.append("\\bottomrule")
+    lines.append("\\end{tabular}%")
+    lines.append("}")
+
+    dataset_display = DATASET_LABELS.get(dataset, dataset)
+    label_suffix = dataset.lower().replace(" ", "_")
+    lines.append(
+        f"\\caption{{Effect of training sample size ($N$) on test QWK for {dataset_display}. "
+        "Baseline uses the human expert rubric without optimization. "
+        "Bold indicates the best and underline indicates the second-best QWK among training sizes for each model.}"
+    )
+    lines.append(f"\\label{{tab:train_size_{label_suffix}}}")
     lines.append("\\end{table}")
     return "\n".join(lines)
 
@@ -167,7 +185,7 @@ def main() -> int:
                         help="Root directory of evaluation results.")
     parser.add_argument("--dataset", action="append",
                         help="Limit to a dataset (can be repeated).")
-    parser.add_argument("--train_sizes", type=int, nargs="+", default=[10, 20, 50, 100],
+    parser.add_argument("--train_sizes", type=int, nargs="+", default=[20, 50, 100],
                         help="Training sizes to compare.")
     parser.add_argument("--output", help="Write LaTeX table to a file instead of stdout.")
     parser.add_argument(
@@ -179,6 +197,12 @@ def main() -> int:
         "--baseline_pattern",
         default="zero_shot_no_expert",
         help="Baseline run name (no optimization).",
+    )
+    parser.add_argument(
+        "--table_mode",
+        choices=["combined", "per_dataset", "both"],
+        default="combined",
+        help="Output mode for LaTeX tables.",
     )
     args = parser.parse_args()
 
@@ -209,7 +233,7 @@ def main() -> int:
             # Load baseline
             baseline_dir = model_dir / args.baseline_pattern
             if baseline_dir.exists():
-                baseline_qwk = get_qwk(baseline_dir, dataset)
+                baseline_qwk = get_qwk(baseline_dir)
                 baselines.setdefault(dataset, {})[model_name] = baseline_qwk
                 print(f"Baseline: {dataset}/{model_name} -> QWK={format_float(baseline_qwk)}")
 
@@ -220,7 +244,7 @@ def main() -> int:
                 if not run_dir.exists():
                     print(f"  Not found: {run_dir}")
                     continue
-                qwk = get_qwk(run_dir, dataset)
+                qwk = get_qwk(run_dir)
                 data.setdefault(dataset, {}).setdefault(model_name, {})[ts] = qwk
                 print(f"  {dataset}/{model_name}/train{ts} -> QWK={format_float(qwk)}")
 
@@ -247,13 +271,22 @@ def main() -> int:
             print(f"  {dataset}/{model}/train{ts}: {rubric_status}")
 
     datasets = [d for d in ["asap_1", "ASAP2", "ets3"] if d in data]
-    table = build_table(data, datasets, train_sizes, baselines)
+    tables: List[str] = []
+
+    if args.table_mode in {"combined", "both"}:
+        tables.append(build_table(data, datasets, train_sizes, baselines))
+
+    if args.table_mode in {"per_dataset", "both"}:
+        for dataset in datasets:
+            tables.append(build_dataset_table(data, dataset, train_sizes, baselines))
+
+    output_text = "\n\n".join(tables)
 
     if args.output:
-        Path(args.output).write_text(table + "\n")
+        Path(args.output).write_text(output_text + "\n")
         print(f"\nWritten to {args.output}")
     else:
-        print("\n" + table)
+        print("\n" + output_text)
 
     return 0
 

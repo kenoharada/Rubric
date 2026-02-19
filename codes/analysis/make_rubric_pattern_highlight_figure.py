@@ -37,6 +37,9 @@ class PatternColor:
     type_id: str
     type_name_en: str
     type_desc_en: str
+    pattern_name_en: str
+    pattern_desc_en: str
+    pattern_cues_en: str
     color_name: str
     color_spec: str
     regex_compiled: re.Pattern[str]
@@ -55,46 +58,45 @@ TYPE_STYLES: dict[str, TypeStyle] = {
     "rule_structure": TypeStyle(
         type_id="rule_structure",
         type_name_en="Rule Structure",
-        type_desc_en="if/threshold/stepwise guidance",
+        type_desc_en=(
+            "Explicit decision logic for scoring: conditional branches, "
+            "boundary tie-breakers, stepwise workflows, and numeric thresholds."
+        ),
         color_name="rpTypeRule",
         color_spec="red!80!black",
     ),
     "evidence_handling": TypeStyle(
         type_id="evidence_handling",
         type_name_en="Evidence Handling",
-        type_desc_en="examples, repetition, and caps",
+        type_desc_en=(
+            "How evidence is validated and counted: specific-example requirements, "
+            "repetition/non-double-count rules, and cap rules for weak evidence."
+        ),
         color_name="rpTypeEvidence",
         color_spec="blue!80!black",
     ),
     "writing_quality": TypeStyle(
         type_id="writing_quality",
         type_name_en="Writing Quality",
-        type_desc_en="organization and grammar/mechanics",
+        type_desc_en=(
+            "Language-quality criteria affecting score bands: "
+            "organization/coherence/transition quality and grammar/mechanics severity."
+        ),
         color_name="rpTypeWriting",
         color_spec="teal!80!black",
     ),
     "other": TypeStyle(
         type_id="other",
         type_name_en="Other",
-        type_desc_en="other matched rubric cues",
+        type_desc_en="Other rubric cues not covered by the above categories.",
         color_name="rpTypeOther",
         color_spec="gray!80!black",
     ),
 }
 
 
-PATTERN_TO_TYPE: dict[str, str] = {
-    "if_rules": "rule_structure",
-    "tie_breaker_boundary": "rule_structure",
-    "stepwise_process": "rule_structure",
-    "anti_mechanical_counting": "rule_structure",
-    "quantitative_thresholds": "rule_structure",
-    "specific_examples_evidence": "evidence_handling",
-    "offtopic_or_summary_cap": "evidence_handling",
-    "repetition_noncount": "evidence_handling",
-    "organization_coherence": "writing_quality",
-    "grammar_mechanics": "writing_quality",
-}
+def get_type_style(type_id: str) -> TypeStyle:
+    return TYPE_STYLES.get(type_id, TYPE_STYLES["other"])
 
 
 def safe_read_text(path: Path) -> str:
@@ -148,14 +150,19 @@ def latex_escape(text: str) -> str:
 def build_pattern_colors(patterns: Iterable[RegexPatternDef]) -> list[PatternColor]:
     out: list[PatternColor] = []
     for p in patterns:
-        type_id = PATTERN_TO_TYPE.get(p.pattern_id, "other")
-        style = TYPE_STYLES.get(type_id, TYPE_STYLES["other"])
+        style = get_type_style(p.type_id)
+        pattern_name_en = p.name_en or p.name_ja or p.pattern_id.replace("_", " ").title()
+        pattern_desc_en = p.description_en or p.description_ja or p.regex
+        pattern_cues_en = p.cues_en or p.regex
         out.append(
             PatternColor(
                 pattern=p,
                 type_id=style.type_id,
                 type_name_en=style.type_name_en,
                 type_desc_en=style.type_desc_en,
+                pattern_name_en=pattern_name_en,
+                pattern_desc_en=pattern_desc_en,
+                pattern_cues_en=pattern_cues_en,
                 color_name=style.color_name,
                 color_spec=style.color_spec,
                 regex_compiled=re.compile(p.regex, flags=re.IGNORECASE),
@@ -217,38 +224,64 @@ def find_non_overlapping_spans(text: str, pattern_colors: list[PatternColor]) ->
 
 def highlight_text_to_latex(
     text: str, pattern_colors: list[PatternColor]
-) -> tuple[str, list[PatternColor]]:
+) -> tuple[str, list[PatternColor], list[tuple[int, int, PatternColor]]]:
     spans = find_non_overlapping_spans(text, pattern_colors)
-    used_color_names: set[str] = set()
+    used_pattern_ids: set[str] = set()
     chunks: list[str] = []
     cursor = 0
     for s, e, pc in spans:
         if cursor < s:
             chunks.append(latex_escape(text[cursor:s]))
-        chunks.append(rf"\textcolor{{{pc.color_name}}}{{{latex_escape(text[s:e])}}}")
-        used_color_names.add(pc.color_name)
+        chunks.append(
+            rf"\textcolor{{{pc.color_name}}}{{\textbf{{{latex_escape(text[s:e])}}}}}"
+        )
+        used_pattern_ids.add(pc.pattern.pattern_id)
         cursor = e
     if cursor < len(text):
         chunks.append(latex_escape(text[cursor:]))
-    used = [pc for pc in pattern_colors if pc.color_name in used_color_names]
-    return "".join(chunks), used
+    used = [pc for pc in pattern_colors if pc.pattern.pattern_id in used_pattern_ids]
+    return "".join(chunks), used, spans
 
 
-def unique_type_styles_from_patterns(used_patterns: list[PatternColor]) -> list[TypeStyle]:
+def count_matches_by_pattern(
+    spans: list[tuple[int, int, PatternColor]]
+) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for _, _, pc in spans:
+        pid = pc.pattern.pattern_id
+        counts[pid] = counts.get(pid, 0) + 1
+    return counts
+
+
+def unique_patterns_by_id(patterns: list[PatternColor]) -> list[PatternColor]:
+    seen: set[str] = set()
+    out: list[PatternColor] = []
+    for pc in patterns:
+        pid = pc.pattern.pattern_id
+        if pid in seen:
+            continue
+        seen.add(pid)
+        out.append(pc)
+    return out
+
+
+def unique_type_styles_from_patterns(
+    used_patterns: list[PatternColor],
+) -> list[TypeStyle]:
     seen: set[str] = set()
     out: list[TypeStyle] = []
     for pc in used_patterns:
         if pc.type_id in seen:
             continue
         seen.add(pc.type_id)
-        out.append(TYPE_STYLES.get(pc.type_id, TYPE_STYLES["other"]))
+        out.append(get_type_style(pc.type_id))
     # 表示順を固定
     order = ["rule_structure", "evidence_handling", "writing_quality", "other"]
     out.sort(key=lambda t: order.index(t.type_id) if t.type_id in order else len(order))
     return out
 
 
-def build_legend_latex(used_patterns: list[PatternColor]) -> str:
+def build_type_legend_latex(used_patterns: list[PatternColor]) -> str:
     if not used_patterns:
         return r"\textit{No pattern matches found.}"
     used_types = unique_type_styles_from_patterns(used_patterns)
@@ -256,9 +289,37 @@ def build_legend_latex(used_patterns: list[PatternColor]) -> str:
     for style in used_types:
         items.append(
             rf"\textcolor{{{style.color_name}}}{{\textbf{{{latex_escape(style.type_name_en)}}}}}"
-            + rf" ({latex_escape(style.type_desc_en)})"
+            + rf": {latex_escape(style.type_desc_en)}"
         )
-    return r" \quad ".join(items)
+    return r"\par ".join(items)
+
+
+def build_detailed_pattern_legend_latex(
+    used_patterns: list[PatternColor], match_counts: dict[str, int]
+) -> str:
+    if not used_patterns:
+        return r"\textit{No matched patterns in the optimized rubric.}"
+
+    used_unique = unique_patterns_by_id(used_patterns)
+    used_types = unique_type_styles_from_patterns(used_unique)
+    lines: list[str] = []
+    for style in used_types:
+        lines.append(
+            rf"\textcolor{{{style.color_name}}}{{\textbf{{{latex_escape(style.type_name_en)}}}}}:"
+        )
+        for pc in [x for x in used_unique if x.type_id == style.type_id]:
+            pid = pc.pattern.pattern_id
+            count = match_counts.get(pid, 0)
+            label = pc.pattern_name_en
+            desc = pc.pattern_desc_en
+            cues = pc.pattern_cues_en
+            lines.append(
+                r"\quad "
+                + rf"\textcolor{{{pc.color_name}}}{{\textbf{{{latex_escape(label)}}}}}"
+                + rf" [n={count}] {latex_escape(desc)} "
+                + rf"Typical cues: {latex_escape(cues)}."
+            )
+    return r"\par ".join(lines)
 
 
 def build_caption_color_note(used_patterns: list[PatternColor]) -> str:
@@ -274,36 +335,48 @@ def build_caption_color_note(used_patterns: list[PatternColor]) -> str:
     return r"Color types: " + "; ".join(parts) + "."
 
 
+def build_caption_pattern_note(
+    used_patterns: list[PatternColor], match_counts: dict[str, int]
+) -> str:
+    used_unique = unique_patterns_by_id(used_patterns)
+    if not used_unique:
+        return "No pattern categories were matched."
+    items = []
+    for pc in used_unique:
+        pid = pc.pattern.pattern_id
+        items.append(
+            f"{pc.pattern_name_en} (n={match_counts.get(pid, 0)})"
+        )
+    return "Matched pattern categories: " + "; ".join(items) + "."
+
+
 def make_figure_tex(
     pair: RubricPair,
     pattern_colors: list[PatternColor],
     excerpt_mode: str,
     context_lines: int,
 ) -> str:
-    before_raw = safe_read_text(Path(pair.initial_path))
     after_raw = safe_read_text(Path(pair.best_path))
 
     if excerpt_mode == "excerpt":
         regexes = [pc.regex_compiled for pc in pattern_colors]
-        before = line_excerpt_with_context(before_raw, regexes, context_lines)
         after = line_excerpt_with_context(after_raw, regexes, context_lines)
     else:
-        before = before_raw
         after = after_raw
 
-    before_latex, used_before = highlight_text_to_latex(before, pattern_colors)
-    after_latex, used_after = highlight_text_to_latex(after, pattern_colors)
-    used_map = {pc.color_name: pc for pc in (used_before + used_after)}
-    used_all = [pc for pc in pattern_colors if pc.color_name in used_map]
+    after_latex, used_after, spans_after = highlight_text_to_latex(after, pattern_colors)
+    used_all = unique_patterns_by_id(used_after)
+    match_counts = count_matches_by_pattern(spans_after)
 
     label = "fig:rubric_pattern_" + sanitize_id(
         f"{pair.dataset}_{pair.model_name}_{pair.run_name}"
     )
     caption = (
-        f"Pattern-highlighted rubric comparison ({pair.dataset}, {pair.model_name}, "
-        f"{pair.run_name}). Matched spans are color-coded by regex pattern."
+        f"Pattern-focused view of the optimized rubric ({pair.dataset}, {pair.model_name}, "
+        f"{pair.run_name}). Colored bold spans indicate regex-matched rubric cues."
     )
     caption_note = build_caption_color_note(used_all)
+    caption_pattern_note = build_caption_pattern_note(used_all, match_counts)
 
     # type単位で重複なく色定義
     type_defs_seen: set[str] = set()
@@ -314,30 +387,26 @@ def make_figure_tex(
         type_defs_seen.add(pc.color_name)
         color_def_lines.append(rf"\colorlet{{{pc.color_name}}}{{{pc.color_spec}}}")
     color_defs = "\n".join(color_def_lines)
-    legend = build_legend_latex(used_all)
+    type_legend = build_type_legend_latex(used_all)
+    pattern_legend = build_detailed_pattern_legend_latex(used_all, match_counts)
 
     return rf"""
 {color_defs}
 \begin{{figure*}}[t]
 \centering
-\begin{{tcolorbox}}[colback=white,colframe=black!25,title=Pattern Legend,fonttitle=\bfseries\small,fontupper=\scriptsize,boxsep=1pt,left=2pt,right=2pt,top=2pt,bottom=2pt]
-{legend}
+\begin{{tcolorbox}}[colback=white,colframe=black!25,title=Pattern Type Guide,fonttitle=\bfseries\small,fontupper=\scriptsize,boxsep=1pt,left=2pt,right=2pt,top=2pt,bottom=2pt]
+{type_legend}
 \end{{tcolorbox}}
-\vspace{{2mm}}
-\begin{{minipage}}[t]{{0.485\textwidth}}
-\begin{{tcolorbox}}[colback=white,colframe=black!25,title=Initial Rubric,fonttitle=\bfseries\small,fontupper=\scriptsize,breakable]
-\ttfamily
-{before_latex}
+\vspace{{1mm}}
+\begin{{tcolorbox}}[colback=white,colframe=black!25,title=Detailed Pattern Notes,fonttitle=\bfseries\small,fontupper=\scriptsize,boxsep=1pt,left=2pt,right=2pt,top=2pt,bottom=2pt]
+{pattern_legend}
 \end{{tcolorbox}}
-\end{{minipage}}
-\hfill
-\begin{{minipage}}[t]{{0.485\textwidth}}
-\begin{{tcolorbox}}[colback=white,colframe=black!25,title=Optimized Rubric,fonttitle=\bfseries\small,fontupper=\scriptsize,breakable]
+\vspace{{1mm}}
+\begin{{tcolorbox}}[colback=white,colframe=black!25,title=Optimized Rubric (Pattern-Highlighted),fonttitle=\bfseries\small,fontupper=\scriptsize]
 \ttfamily
 {after_latex}
 \end{{tcolorbox}}
-\end{{minipage}}
-\caption{{{latex_escape(caption)} {caption_note}}}
+\caption{{{latex_escape(caption)} {caption_note} {latex_escape(caption_pattern_note)}}}
 \label{{{label}}}
 \end{{figure*}}
 """.strip() + "\n"
@@ -398,7 +467,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--patterns_json",
         type=str,
-        default="",
+        default="codes/analysis/rubric_regex_changes/patterns_used.json",
         help="正規表現パターンJSON（analyze_rubric_regex_changes.pyと同形式）",
     )
     parser.add_argument(

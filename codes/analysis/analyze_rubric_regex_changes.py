@@ -59,6 +59,12 @@ class RegexPatternDef:
     name_ja: str
     description_ja: str
     regex: str
+    # 可視化用途の追加メタ情報（patterns_jsonで上書き可能）
+    type_id: str = "other"
+    name_en: str | None = None
+    description_en: str | None = None
+    cues_en: str | None = None
+    enabled: bool = True
 
 
 DEFAULT_PATTERNS: list[RegexPatternDef] = [
@@ -247,12 +253,19 @@ def build_patterns(patterns_json: str) -> list[RegexPatternDef]:
         raw = raw["patterns"]
     patterns: list[RegexPatternDef] = []
     for row in raw:
+        if not bool(row.get("enabled", True)):
+            continue
         patterns.append(
             RegexPatternDef(
                 pattern_id=row["pattern_id"],
-                name_ja=row["name_ja"],
-                description_ja=row["description_ja"],
+                name_ja=row.get("name_ja", row["pattern_id"]),
+                description_ja=row.get("description_ja", ""),
                 regex=row["regex"],
+                type_id=row.get("type_id", "other"),
+                name_en=row.get("name_en"),
+                description_en=row.get("description_en"),
+                cues_en=row.get("cues_en"),
+                enabled=bool(row.get("enabled", True)),
             )
         )
     return patterns

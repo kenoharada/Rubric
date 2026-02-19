@@ -13,6 +13,7 @@ import csv
 import re
 import hashlib
 from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # =============================================================================
@@ -63,6 +64,8 @@ def _normalize_model(permaslug: str) -> str:
 
 # OpenRouter の user フィールド長制限により truncate + hash が付く場合がある
 OPENROUTER_USER_MAX_LEN = 128
+SESSION_GAP_MINUTES = 90
+SESSION_GAP = timedelta(minutes=SESSION_GAP_MINUTES)
 
 
 def _reverse_truncated_user(user: str) -> str:
@@ -72,6 +75,31 @@ def _reverse_truncated_user(user: str) -> str:
     truncated なものはそのまま返す（後でグルーピング時に hash suffix で識別）
     """
     return user
+
+
+def _parse_created_at(created_at: str) -> datetime | None:
+    """CSV の created_at を datetime に変換（失敗時は None）"""
+    if not created_at:
+        return None
+    value = created_at.strip()
+    if not value:
+        return None
+
+    # 例: "2026-02-18 06:28:35.429", "2026-02-18T06:28:35.429Z"
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if dt.tzinfo is not None:
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt
+    except ValueError:
+        pass
+
+    for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
+        try:
+            return datetime.strptime(value, fmt)
+        except ValueError:
+            continue
+    return None
 
 
 def parse_user_field(user: str) -> dict:
@@ -183,6 +211,7 @@ def calc_cost(tokens_prompt: int, tokens_completion: int, tokens_reasoning: int,
 def load_and_aggregate(csv_path: str) -> dict:
     """
     CSVを読み込み、run (user フィールド) ごとに集計する。
+    ただし同一 user でも created_at の差が 90 分以上あれば別 run として扱う。
 
     Returns:
         dict: run_key -> {
@@ -196,19 +225,11 @@ def load_and_aggregate(csv_path: str) -> dict:
             "api_calls": int,
         }
     """
-    runs = defaultdict(lambda: {
-        "tokens_prompt": 0,
-        "tokens_completion": 0,
-        "tokens_reasoning": 0,
-        "tokens_cached": 0,
-        "cost_usd": 0.0,
-        "byok_usage": 0.0,
-        "api_calls": 0,
-    })
+    rows_by_user: dict[str, list[dict]] = defaultdict(list)
 
     with open(csv_path, newline="") as f:
         reader = csv.DictReader(f)
-        for row in reader:
+        for row_idx, row in enumerate(reader):
             user = row.get("user", "")
             if not user:
                 continue
@@ -222,19 +243,86 @@ def load_and_aggregate(csv_path: str) -> dict:
             model = _normalize_model(model_slug)
 
             cost = calc_cost(tp, tc, tr, tca, model)
+            created_at = _parse_created_at(row.get("created_at", ""))
 
-            entry = runs[user]
-            if "info" not in entry:
-                entry["info"] = parse_user_field(user)
-            entry["tokens_prompt"] += tp
-            entry["tokens_completion"] += tc
-            entry["tokens_reasoning"] += tr
-            entry["tokens_cached"] += tca
-            entry["cost_usd"] += cost
-            entry["byok_usage"] += byok
-            entry["api_calls"] += 1
+            rows_by_user[user].append({
+                "row_idx": row_idx,
+                "created_at": created_at,
+                "tokens_prompt": tp,
+                "tokens_completion": tc,
+                "tokens_reasoning": tr,
+                "tokens_cached": tca,
+                "cost_usd": cost,
+                "byok_usage": byok,
+            })
 
-    return dict(runs)
+    runs: dict[str, dict] = {}
+    for user, user_rows in rows_by_user.items():
+        ordered_rows = sorted(
+            user_rows,
+            key=lambda r: (r["created_at"] is None, r["created_at"] or datetime.min, r["row_idx"]),
+        )
+
+        sessions: list[list[dict]] = []
+        current_session: list[dict] = []
+        prev_created_at: datetime | None = None
+
+        for r in ordered_rows:
+            current_created_at = r["created_at"]
+            if (
+                current_session
+                and current_created_at is not None
+                and prev_created_at is not None
+                and current_created_at - prev_created_at >= SESSION_GAP
+            ):
+                sessions.append(current_session)
+                current_session = []
+
+            current_session.append(r)
+            if current_created_at is not None:
+                prev_created_at = current_created_at
+
+        if current_session:
+            sessions.append(current_session)
+
+        base_info = parse_user_field(user)
+        user_is_split = len(sessions) > 1
+
+        for session_idx, session_rows in enumerate(sessions, start=1):
+            if user_is_split:
+                session_start = next(
+                    (x["created_at"] for x in session_rows if x["created_at"] is not None),
+                    None,
+                )
+                if session_start is not None:
+                    suffix = session_start.strftime("%Y%m%d%H%M")
+                else:
+                    suffix = f"row{session_rows[0]['row_idx']}"
+                run_key = f"{user}__session{session_idx}_{suffix}"
+            else:
+                run_key = user
+
+            entry = {
+                "info": dict(base_info),
+                "tokens_prompt": 0,
+                "tokens_completion": 0,
+                "tokens_reasoning": 0,
+                "tokens_cached": 0,
+                "cost_usd": 0.0,
+                "byok_usage": 0.0,
+                "api_calls": 0,
+            }
+            for r in session_rows:
+                entry["tokens_prompt"] += r["tokens_prompt"]
+                entry["tokens_completion"] += r["tokens_completion"]
+                entry["tokens_reasoning"] += r["tokens_reasoning"]
+                entry["tokens_cached"] += r["tokens_cached"]
+                entry["cost_usd"] += r["cost_usd"]
+                entry["byok_usage"] += r["byok_usage"]
+                entry["api_calls"] += 1
+            runs[run_key] = entry
+
+    return runs
 
 
 # =============================================================================
@@ -562,7 +650,7 @@ def main():
     parser.add_argument(
         "--csv",
         type=str,
-        default=str(Path(__file__).parent / "openrouter_activity_2026-02-18.csv"),
+        default=str(Path(__file__).parent / "openrouter_activity_2026-02-19.csv"),
         help="Path to OpenRouter activity CSV",
     )
     parser.add_argument(

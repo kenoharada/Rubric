@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\begin{tabular}{llrrr}
+\toprule
+Category & Pattern & Before & After & $\Delta$ \\
+\midrule
+Rule Structure & Conditional Gating & 0.0 & 21.2 & +21.2 \\
+ & Quantitative Threshold & 0.0 & 9.1 & +9.1 \\
+ & Score Cap / Demotion & 0.0 & 2.7 & +2.7 \\
+ & Stepwise Workflow & 0.0 & 2.6 & +2.6 \\
+ & Boundary / Tie-Break & 0.0 & 2.6 & +2.6 \\
+\midrule
+Evidence Handling & Concrete Exemplification & 0.3 & 11.0 & +10.7 \\
+ & Evidence Count Safeguard & 0.0 & 2.3 & +2.3 \\
+\bottomrule
+\end{tabular}
+\caption{Regex-based match counts in human-authored rubrics (\textbf{Before}) vs.\ iteratively refined rubrics (\textbf{After}), averaged over 9 runs. Each pattern is detected by case-insensitive keyword matching. \textsc{Rule Structure}: \textbf{Conditional Gating} (\textit{if, when, unless, provided that}); \textbf{Quantitative Threshold} (\textit{at least, at most, <=, >=, N reasons/examples/sentences, N\%}); \textbf{Score Cap / Demotion} (\textit{cannot be Score, must not receive, do not award, downgrade, demotion}); \textbf{Stepwise Workflow} (\textit{step N, checklist, workflow, procedure, in order}); \textbf{Boundary / Tie-Break} (\textit{tie-break, borderline, threshold, N vs N, between adjacent}). \textsc{Evidence Handling}: \textbf{Concrete Exemplification} (\textit{specific example, concrete example, concrete detail, anecdote, personal experience, explicit evidence, e.g., for example, for instance}); \textbf{Evidence Count Safeguard} (\textit{do not count, not mechanically, do not equate, not equivalent, repetition, restatement, double-count, rephrasing, near-duplicate}). $\Delta$ = After $-$ Before.}
+\label{tab:rubric_pattern_changes}
+\end{table}
