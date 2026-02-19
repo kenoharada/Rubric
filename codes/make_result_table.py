@@ -16,8 +16,8 @@ METHOD_LABELS = {
     # "zero_shot_base_simplest_False_train100_iteration1_top3_bs4-8-12_mc1": "AutoCalibrate from simplest",
     # "few_shot_base_expert_False_train100_iteration1_top3_bs4-8-12_mc1": "AutoCalibrate (few\_shot)",
     "zero_shot_base_expert_True_train100_iteration5_top3_bs4-8-12_mc4": "\\textbf{Ours}",
-    # "zero_shot_base_expert_False_train100_iteration5_top3_bs4-8-12_mc1": "\\textbf{Ours w/o rationale}",
-    # "zero_shot_base_simplest_True_train100_iteration5_top3_bs4-8-12_mc1": "\\textbf{Ours from simplest}",
+    # "zero_shot_base_expert_False_train100_iteration5_top3_bs4-8-12_mc4": "\\textbf{Ours w/o rationale}",
+    "zero_shot_base_simplest_True_train100_iteration5_top3_bs4-8-12_mc4": "\\textbf{Ours from simplest}",
     # "few_shot_base_expert_True_train100_iteration5_top3_bs4-8-12_mc1": "\\textbf{Ours} (few\_shot)",
 }
 
@@ -29,10 +29,10 @@ MODEL_LABELS = {
 }
 
 DATASET_LABELS = {
-    "asap_1": "ASAP P1",
+    "asap_1": "ASAP",
     # "ets": "TOEFL11",
-    # "ets3": "TOEFL11",
-    # "ASAP2": "ASAP 2.0",
+    "ets3": "TOEFL11",
+    "ASAP2": "ASAP 2.0",
 }
 # METHOD_LABELS: Dict[str, str] = {
 #     "zero_shot_no_expert": "zero_shot",
@@ -277,7 +277,7 @@ def main() -> int:
     if not root.exists():
         raise SystemExit(f"Root not found: {root}")
 
-    dataset_filter = set(args.dataset or ["asap_1"]) # ["asap_1", "ets3", "ASAP2"]
+    dataset_filter = set(args.dataset or ["asap_1", "ets3", "ASAP2"]) # ["asap_1", "ets3", "ASAP2"]
     grouped: Dict[str, Dict[str, Dict[str, Dict[str, Optional[float]]]]] = {}
     required_runs = list(METHOD_LABELS.keys())
     metrics = [m.strip().lower() for m in args.metrics.split(",") if m.strip()]

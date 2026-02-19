@@ -16,9 +16,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from inference import parse_rating, rating_to_quality, quality_to_score_for_qwk
 
 HUMAN_RUN = "zero_shot_no_expert"
-OURS_RUN = "zero_shot_base_expert_True_train100_iteration5_top3_bs4-8-12_mc1"
-# MODEL_DIR = "qwen_qwen3-next-80b-a3b-instruct"
-MODEL_DIR = "openai_gpt-5-mini"
+OURS_RUN = "zero_shot_base_expert_True_train100_iteration5_top3_bs4-8-12_mc4"
+MODEL_DIR = "qwen_qwen3-next-80b-a3b-instruct"
+# MODEL_DIR = "openai_gpt-5-mini"
 
 DATASETS = [
     {"key": "asap_1", "label": "ASAP P1", "scores": list(range(1, 7)), "tick_labels": None},

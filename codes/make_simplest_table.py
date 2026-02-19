@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 
-SIMPLEST_OURS_RUN = "zero_shot_base_simplest_True_train100_iteration5_top3_bs4-8-12_mc1"
+SIMPLEST_OURS_RUN = "zero_shot_base_simplest_True_train100_iteration5_top3_bs4-8-12_mc4"
 HUMAN_EXPERT_RUN = "zero_shot_no_expert"
 
 KNOWN_VENDORS = ("openai", "google", "qwen")
@@ -23,7 +23,7 @@ MODEL_ORDER = [
 ]
 
 DATASET_LABELS = {
-    "asap_1": "ASAP P1",
+    "asap_1": "ASAP",
     "ets3": "TOEFL11",
     "ASAP2": "ASAP 2.0",
 }
@@ -72,16 +72,16 @@ def build_table(rows):
     lines.append(
         "\\caption{QWK comparison: rubrics refined from the simplest seed "
         "(``Based on the response\'s content, rate the response on a scale of 1 to 6.'') vs.\\ the rubric written by human experts. "
-        "$\\Delta$ denotes QWK improvement over the Human Expert baseline.}"
+        "$\\Delta$ denotes QWK improvement over the baseline using human expert rubrics.}"
     )
     lines.append("\\label{tab:simplest}")
     lines.append("\\begin{tabular}{llrr}")
     lines.append("\\toprule")
     lines.append(
         "\\textbf{Dataset} & \\textbf{LLM} & \\textbf{Simplest} "
-        "& \\textbf{$\\Delta$ vs.\\ Human} \\\\"
+        "& \\textbf{$\\Delta$ vs.\\ Expert} \\\\"
     )
-    lines.append(" & & \\textbf{+ Ours} & \\textbf{Expert} \\\\")
+    lines.append(" & & \\textbf{+ Ours} & \\textbf{Rubric} \\\\")
     lines.append("\\midrule")
 
     last_dataset = None
