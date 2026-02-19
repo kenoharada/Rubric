@@ -21,9 +21,9 @@ MODEL_DIR = "qwen_qwen3-next-80b-a3b-instruct"
 # MODEL_DIR = "openai_gpt-5-mini"
 
 DATASETS = [
-    {"key": "asap_1", "label": "ASAP P1", "scores": list(range(1, 7)), "tick_labels": None},
+    {"key": "asap_1", "label": "ASAP", "scores": list(range(1, 7)), "tick_labels": None},
     {"key": "ASAP2", "label": "ASAP 2.0", "scores": list(range(1, 7)), "tick_labels": None},
-    {"key": "ets3", "label": "TOEFL11", "scores": [1, 2, 3], "tick_labels": ["Low", "Med", "High"]},
+    {"key": "ets3", "label": "TOEFL11", "scores": [1, 2, 3], "tick_labels": None},
 ]
 
 
@@ -87,7 +87,7 @@ def plot_heatmap(ax, cm, scores, tick_labels, title, show_ylabel=True, show_xlab
     if show_ylabel:
         ax.set_ylabel("True Score")
 
-    ax.set_title(title, fontsize=10)
+    ax.set_title(title)
 
     # Annotate cells with counts
     for i in range(len(scores)):
@@ -95,7 +95,7 @@ def plot_heatmap(ax, cm, scores, tick_labels, title, show_ylabel=True, show_xlab
             count = cm[i, j]
             if count > 0:
                 color = "white" if cm_norm[i, j] > 0.5 else "black"
-                fontsize = 10 if len(scores) > 4 else 12
+                fontsize = 10 if len(scores) > 4 else 10
                 ax.text(j, i, str(count), ha="center", va="center",
                         color=color, fontsize=fontsize)
 
@@ -114,22 +114,37 @@ def main():
     if not root.exists():
         raise SystemExit(f"Root not found: {root}")
 
-    plt.rcParams.update({
-        "font.family": "serif",
-        "font.size": 12,
-        "axes.titlesize": 13,
-        "axes.labelsize": 12,
-        "xtick.labelsize": 11,
-        "ytick.labelsize": 11,
+    # Font and figure settings (matching paper style)
+    line_width_pt = 219
+    full_width_pt = line_width_pt * 2 + 18  # two columns + separation
+    font_size_pt = 11
+    matplotlib.rcParams.update({
+        "font.family": "Times New Roman",
+        "font.size": font_size_pt,
+        "axes.titlesize": font_size_pt - 1,
+        "axes.labelsize": font_size_pt - 1,
+        "legend.fontsize": font_size_pt - 2,
+        "legend.title_fontsize": font_size_pt - 2,
+        "xtick.labelsize": font_size_pt - 2,
+        "ytick.labelsize": font_size_pt - 2,
+        "mathtext.fontset": "stix",
+        "figure.dpi": 300,
+        "savefig.dpi": 300,
+        "savefig.pad_inches": 0,
+        "pdf.use14corefonts": False,
+        "pdf.fonttype": 42,
     })
 
-    # Layout: 2 rows (Human Expert, Ours) x 3 columns (ASAP P1, ASAP 2.0, TOEFL11)
-    fig = plt.figure(figsize=(10, 5.5))
-    gs = gridspec.GridSpec(2, 3, figure=fig, width_ratios=[6, 6, 3.5],
-                           hspace=0.4, wspace=0.35)
+    # Layout: 2 rows (Human Expert, Ours) x 3 columns + colorbar
+    # width_ratios match score counts so cells are uniform physical size
+    fig_width = full_width_pt / 72.0  # inches
+    fig_height = fig_width * 0.72
+    fig = plt.figure(figsize=(fig_width, fig_height))
+    gs = gridspec.GridSpec(2, 4, figure=fig, width_ratios=[1, 1, 1, 0.05],
+                           hspace=0.1, wspace=0.25)
 
     methods = [
-        (HUMAN_RUN, "Human Expert"),
+        (HUMAN_RUN, "Expert Rubric"),
         (OURS_RUN, "Ours"),
     ]
 
@@ -149,7 +164,7 @@ def main():
             y_true, y_pred = load_predictions(results_path, ds["key"], run_name)
             cm = build_confusion_matrix(y_true, y_pred, ds["scores"])
 
-            title = f"{ds['label']} — {method_label}"
+            title = f"{ds['label']} ({method_label})"
             ax = fig.add_subplot(gs[row_idx, col_idx])
             last_im = plot_heatmap(
                 ax, cm, ds["scores"], ds.get("tick_labels"), title,
@@ -162,9 +177,9 @@ def main():
             correct = np.trace(cm)
             print(f"{ds['label']} / {method_label}: {correct}/{total} correct ({correct/total:.1%})")
 
-    # Add colorbar
+    # Add colorbar in the dedicated 4th column
     if last_im is not None:
-        cbar_ax = fig.add_axes([0.93, 0.15, 0.015, 0.7])
+        cbar_ax = fig.add_subplot(gs[:, 3])
         fig.colorbar(last_im, cax=cbar_ax, label="Row-normalized proportion")
 
     output_path = Path(args.output)

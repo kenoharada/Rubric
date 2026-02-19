@@ -101,9 +101,10 @@ load_inference_eval_hparams() {
     TRAIN_SIZES=(
         # "4"
         # "8"
-        # "20"
-        # "50"
-        "100"
+        "10"
+        "20"
+        "50"
+        # "100"
     )
 
     BATCH_SIZE_SETS=(
@@ -120,7 +121,7 @@ load_inference_eval_hparams() {
     DATASETS=(
         "asap_1"
         # "ets"
-        "ets3"
+        # "ets3"
         "ASAP2"
     )
 
