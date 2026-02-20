@@ -19,7 +19,6 @@ def _normalize_openrouter_user(config: dict[str, Any] | None) -> dict[str, Any]:
     normalized = dict(config or {})
     user_value = normalized.get("user")
     if isinstance(user_value, str) and len(user_value) > OPENROUTER_USER_MAX_LEN:
-        # OpenRouter の上限(128文字)に収めつつ、衝突回避のため短いハッシュを付与する
         suffix = hashlib.sha1(user_value.encode("utf-8")).hexdigest()[:12]
         prefix_len = OPENROUTER_USER_MAX_LEN - len(suffix) - 1
         normalized["user"] = f"{user_value[:prefix_len]}_{suffix}"
@@ -171,7 +170,6 @@ async def get_llm_responses_batch_async(messages_list, model_name, config, sessi
         if owns_session:
             await session.close()
 
-# -------------- ベンチマーク追加 --------------
 
 # MODEL = "qwen/qwen3-235b-a22b-2507"
 # config = {

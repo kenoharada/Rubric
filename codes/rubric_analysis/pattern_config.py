@@ -73,7 +73,7 @@ PATTERNS = [
         "description_en": (
             "Condition-based branching rules (if / when / unless / provided that) "
             "that explicitly guide rater decisions under specific circumstances. "
-            "Optimized rubrics tend to add many conditional gates to reduce "
+            "Refined rubrics tend to add many conditional gates to reduce "
             "ambiguity in borderline situations."
         ),
         "cues_en": "if, when, unless, provided that",
@@ -94,7 +94,7 @@ PATTERNS = [
         "description_en": (
             "Rules for resolving borderline cases between adjacent score bands. "
             "Includes tie-break procedures, explicit threshold cutoffs, and "
-            "'N vs N' comparisons (e.g., '3 vs 4'). Optimized rubrics often "
+            "'N vs N' comparisons (e.g., '3 vs 4'). Refined rubrics often "
             "add detailed boundary-resolution instructions to improve "
             "inter-rater agreement."
         ),
@@ -164,7 +164,7 @@ PATTERNS = [
             "Hard constraints that cap the maximum achievable score or forcibly "
             "demote ratings when specific conditions are unmet. Examples: "
             "'cannot receive 4 or higher', 'do not award 5', 'downgrade to 2'. "
-            "Optimized rubrics add these guards to prevent systematic "
+            "Refined rubrics add these guards to prevent systematic "
             "over-scoring of essays that superficially appear competent."
         ),
         "cues_en": "cannot be Score, must not receive, do not award, downgrade, demotion",
@@ -252,7 +252,7 @@ PATTERNS = [
             "anecdotes, or explicit evidence; "
             "(2) the rubric itself using illustrative examples "
             "(e.g., for example, for instance) to clarify scoring criteria. "
-            "Optimized rubrics frequently replace abstract descriptions with "
+            "Refined rubrics frequently replace abstract descriptions with "
             "example-rich explanations, making this a strong indicator of "
             "rubric practicality improvement."
         ),
@@ -280,7 +280,7 @@ PATTERNS = [
         "description_en": (
             "Rules for handling off-topic, irrelevant, or digressive essay "
             "content, as well as summary-only responses lacking analysis. "
-            "Optimized rubrics may add explicit off-topic handling rules "
+            "Refined rubrics may add explicit off-topic handling rules "
             "that were absent in the original."
         ),
         "cues_en": "off-topic, irrelevant, digression, summary-only",
@@ -326,7 +326,7 @@ PATTERNS = [
         "description_en": (
             "References to counterarguments, rebuttals, trade-offs, or nuanced "
             "analytical positions. Indicates expectations for higher-order "
-            "thinking at upper score bands. Optimized rubrics may introduce "
+            "thinking at upper score bands. Refined rubrics may introduce "
             "these as discriminators for top scores (e.g., score 5-6)."
         ),
         "cues_en": "counterargument, rebuttal, trade-off, nuance, synthesis",
