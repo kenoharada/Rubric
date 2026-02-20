@@ -33,6 +33,7 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{booktabs}
+\usepackage{multirow}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{colortbl}
@@ -123,13 +124,6 @@ The University of Tokyo
 Large Language Models (LLMs) are increasingly used for Automated Essay Scoring (AES), yet the scoring rubrics they rely on are typically designed for human raters and may not be optimal for LLMs. Inspired by the calibration process that human raters undergo before formal scoring, we propose Reflect-and-Revise, an iterative framework that refines scoring rubrics by prompting models to reflect on their own chain-of-thought rationales and score discrepancies with human labels. At each iteration, the model identifies systematic error patterns from sampled mismatches and revises the rubric accordingly. Experiments on three essay scoring benchmarks (ASAP, ASAP 2.0, and TOEFL11) with three LLMs (GPT-5 mini, Gemini 3 Flash, and Qwen3-80B-A3B) demonstrate that our method yields substantial improvements in Quadratic Weighted Kappa (QWK), achieving gains of up to +0.438 over human-authored rubrics. Starting from a minimal seed rubric that specifies only the score scale, our method matches or exceeds expert rubric performance in seven out of nine dataset-model combinations, indicating that iterative refinement can reduce the manual effort of rubric authoring. Analysis of the refined rubrics reveals that the optimization process introduces explicit procedural structures, such as conditional gating rules and quantitative thresholds, that are absent from human-authored rubrics, highlighting a gap between rubrics designed for human raters and those effective for LLMs.\footnote{Refinement and evaluation codes are available at \url{https://anonymous.4open.science/r/RubricCode-C333}}
 \end{abstract}
 
-\begin{figure*}[t]
-\centering
-\includegraphics[width=0.75\textwidth]{figures/confusion_matrices.pdf}
-\caption{Confusion matrices for Qwen3-80B-A3B with the human expert rubric (top) and our refined rubric (bottom) across three datasets. Cell colors indicate row-normalized proportions; numbers show raw counts. Our refined rubric produces predictions more concentrated along the diagonal, indicating better agreement with human annotations.}
-\label{fig:confusion}
-\end{figure*}
-
 \section{Introduction}
 Automated Essay Scoring (AES) systems powered by Large Language Models (LLMs) are increasingly expected to provide real-time, scalable feedback for students and alleviate the grading burden on instructors~\citep{mizumoto2023aes,yancey-etal-2023-rating,naismith-etal-2023-automated,pack2024validity}. Typically, these systems employ static, pre-defined rubrics to guide the evaluation. However, it remains an open question whether rubrics designed for human raters are optimal for LLMs. When human raters use a rubric, they often engage in a collaborative calibration process: they score sample essays, discuss discrepancies in their judgments, and refine their shared understanding of the criteria to ensure consistency~\citep{trace2016rubricsnegotiate,ozfidan2022rubricdev,yoo-etal-2025-dress}. This iterative, reflective practice is overlooked in current LLM-based AES, potentially limiting their alignment with human scoring patterns.
 
@@ -138,7 +132,9 @@ Recent studies show that LLMs have the ability to refine their own outputs espec
 Inspired by these developments and the calibration process of human raters, we propose an iterative Reflect-and-Revise approach for refining rubrics in LLM-based AES.
 Specifically, given a small set of 100 sample essays with human scores, the model iteratively refines the rubric by reflecting on its own scoring rationales and the discrepancies between its predicted scores and human labels, with the objective of maximizing Quadratic Weighted Kappa (QWK) between model and human scores.
 
-Our method differs from prior rubric optimization approaches in two respects, both motivated by the improved reasoning and instruction-following capabilities of recent LLMs. First, we incorporate the model's chain-of-thought rationales into the revision process, providing richer diagnostic signals for identifying why the current rubric leads to scoring errors. Second, we apply iterative refinement over multiple rounds, enabling progressive rubric improvement rather than relying on a single revision pass. We evaluate on three datasets (ASAP, ASAP 2.0, and TOEFL11) with three models (\texttt{GPT-5 mini}, \texttt{Qwen3-80B-A3B}, and \texttt{Gemini 3 Flash}). Our method consistently outperforms both human-authored rubrics and the AutoCalibrate baseline~\citep{liu-etal-2024-calibrating} on ASAP and ASAP 2.0, achieving QWK gains of up to +0.438 over human rubrics. Starting from a minimal seed rubric that specifies only the score scale, our method matches or exceeds the performance of expert rubrics in seven out of nine dataset--model combinations. Ablation studies confirm that both components contribute to the observed improvements. Furthermore, analysis of the refined rubrics reveals that the refinement process introduces explicit procedural structures, such as conditional gating rules and quantitative thresholds, that are absent from human-authored rubrics.
+Our method differs from prior rubric refinement approaches~\citep{xie2024gradelikehuman,lee-etal-2024-unleashing,liu-etal-2024-calibrating} in two respects, both motivated by the improved reasoning and instruction-following capabilities of recent LLMs. First, we incorporate the model's chain-of-thought rationales into the revision process, providing richer diagnostic signals for identifying why the current rubric leads to scoring errors. Second, we apply iterative refinement over multiple rounds, enabling progressive rubric improvement rather than relying on a single revision pass. 
+
+We evaluate on three datasets (ASAP, ASAP 2.0, and TOEFL11) with three models (\texttt{GPT-5 mini}, \texttt{Qwen3-80B-A3B}, and \texttt{Gemini 3 Flash}). Our method consistently outperforms both human-authored rubrics and the AutoCalibrate baseline~\citep{liu-etal-2024-calibrating} on ASAP and ASAP 2.0, achieving QWK gains of up to +0.438 over human rubrics. Starting from a minimal seed rubric that specifies only the score scale, our method matches or exceeds the performance of expert rubrics in seven out of nine dataset--model combinations. Ablation studies confirm that both components contribute to the observed improvements. Furthermore, analysis of the refined rubrics reveals that the refinement process introduces explicit procedural structures, such as conditional gating rules and quantitative thresholds, that are absent from human-authored rubrics.
 
 \begin{table*}[t]
   \centering
@@ -163,7 +159,7 @@ Our method differs from prior rubric optimization approaches in two respects, bo
     \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} & \textbf{$\checkmark$} \\
     \bottomrule
   \end{tabular}}
-  \caption{Comparison of signals and strategies used to refine evaluation rubrics. \textbf{Scores}: human-labeled scores. \textbf{Texts}: texts being evaluated (essays/answers/responses that receive scores). \textbf{Sources}: source passages used to compose responses (e.g., source documents, provided essay themes). \textbf{Predictions}: model-predicted scores. \textbf{Rationales}: model-generated justifications accompanying predicted scores. \textbf{Iterative}: whether the method iteratively refines rubrics over multiple rounds. Our method uniquely leverages all five signals and performs iterative refinement.}
+  \caption{Comparison of signals and strategies used to refine evaluation rubrics. \textbf{Scores}: whether the method uses human-labeled scores. \textbf{Texts}: whether the method uses the texts being evaluated (essays/answers/responses that receive scores). \textbf{Sources}: whether the method uses source passages used to compose responses (e.g., source documents, provided essay themes). \textbf{Predictions}: whether the method uses model-predicted scores. \textbf{Rationales}: whether the method uses model-generated justifications accompanying predicted scores. \textbf{Iterative}: whether the method iteratively refines rubrics over multiple rounds. Our method uniquely leverages all five signals and performs iterative refinement.}
 \label{tab:rubric_rewrite_data_requirements}
 \end{table*}
 
@@ -179,6 +175,9 @@ A growing body of work explores methods for generating or refining evaluation ru
 Among these, \citet{liu-etal-2024-calibrating} proposed the pipeline closest to ours. Their method samples candidate evaluation criteria from human-scored data, scores a held-out set, and refines the best-performing criteria by analyzing error cases where model scores diverge from human labels. However, their approach differs from ours in two key respects: (1) the refinement loop is executed only once rather than iteratively, and (2) the refinement step does not incorporate the model's chain-of-thought rationales, limiting the diagnostic signal available for rubric revision.
 
 Our method extends this line of work by enabling the LLM to reflect on its own scoring output, including its chain-of-thought rationales, to iteratively refine the rubric. By feeding back not only human-labeled and model-predicted scores but also the model's justifications for those predictions, our approach provides richer diagnostic information for identifying why the current rubric leads to scoring errors. This process effectively mimics the calibration sessions of human evaluators, who refine their interpretations and build shared understanding before formal scoring~\citep{trace2016rubricsnegotiate,ozfidan2022rubricdev,yoo-etal-2025-dress}. Table~\ref{tab:rubric_rewrite_data_requirements} summarizes the signals used for rubric refinement across prior work and our method.
+
+\input{combined_table.tex}
+
 
 \section{Iterative Rubric Refinement}
 \label{sec:method}
@@ -221,58 +220,6 @@ Let \(\mathcal{N}_t\) be the union of all newly revised rubrics and the previous
 \end{equation}
 The global best rubric \(\rubric_{\mathrm{best}}\) is updated only when the best candidate of \(\mathcal{C}_t\) improves over the previous best training QWK. We repeat this process for \(T\) iterations and return \(\rubric_{\mathrm{best}}\).
 
-\begin{table*}[t]
-\centering
-\begin{tabular}{llrrrrr}
-\toprule
-LLM & Rubric written by & QWK & Accuracy & Spearman & Macro-F1 & MAE \\
-\midrule
-Gemini 3 Flash & Human & 0.427 & 0.404 & 0.568 & 0.307 & 0.697 \\
-Gemini 3 Flash & AutoCalibrate & 0.489 & 0.590 & 0.493 & \underline{0.382} & 0.460 \\
-Gemini 3 Flash & \textbf{Ours} & \textbf{0.646} & \textbf{0.680} & \textbf{0.656} & \textbf{0.595} & \textbf{0.330} \\
-Gemini 3 Flash & \textbf{Ours from simplest} & \underline{0.580} & \underline{0.650} & \underline{0.619} & 0.338 & \underline{0.360} \\
-\midrule
-GPT-5 mini & Human & 0.042 & 0.110 & 0.151 & 0.058 & 1.430 \\
-GPT-5 mini & AutoCalibrate & \underline{0.390} & \underline{0.410} & \underline{0.396} & \underline{0.231} & \underline{0.620} \\
-GPT-5 mini & \textbf{Ours} & \textbf{0.480} & \textbf{0.450} & \textbf{0.510} & \textbf{0.271} & \textbf{0.600} \\
-GPT-5 mini & \textbf{Ours from simplest} & 0.314 & 0.360 & 0.282 & 0.219 & 0.700 \\
-\midrule
-Qwen3-80B-A3B & Human & 0.121 & 0.130 & 0.323 & 0.123 & 1.540 \\
-Qwen3-80B-A3B & AutoCalibrate & \underline{0.240} & 0.310 & \underline{0.458} & \underline{0.233} & 1.100 \\
-Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.473} & \textbf{0.520} & \textbf{0.490} & \textbf{0.402} & \textbf{0.570} \\
-Qwen3-80B-A3B & \textbf{Ours from simplest} & 0.154 & \underline{0.320} & 0.188 & 0.158 & \underline{0.920} \\
-\bottomrule
-\end{tabular}
-\caption{Zero-shot evaluation results on ASAP. Bold and underlined values indicate the best and second-best scores for each model.}
-\label{tab:asap1}
-\end{table*}
-
-\begin{table*}[t]
-\centering
-\begin{tabular}{llrrrrr}
-\toprule
-LLM & Rubric written by & QWK & Accuracy & Spearman & Macro-F1 & MAE \\
-\midrule
-Gemini 3 Flash & Human & 0.613 & 0.440 & 0.657 & 0.270 & 0.610 \\
-Gemini 3 Flash & AutoCalibrate & 0.646 & \underline{0.490} & \textbf{0.716} & 0.297 & \underline{0.550} \\
-Gemini 3 Flash & \textbf{Ours} & \textbf{0.700} & \textbf{0.540} & \textbf{0.716} & \textbf{0.393} & \textbf{0.520} \\
-Gemini 3 Flash & \textbf{Ours from simplest} & \underline{0.651} & 0.470 & \underline{0.682} & \underline{0.310} & 0.580 \\
-\midrule
-GPT-5 mini & Human & 0.358 & \underline{0.350} & \underline{0.533} & 0.148 & 0.780 \\
-GPT-5 mini & AutoCalibrate & 0.338 & 0.340 & 0.514 & 0.142 & 0.790 \\
-GPT-5 mini & \textbf{Ours} & \textbf{0.537} & \textbf{0.440} & \textbf{0.618} & \textbf{0.239} & \textbf{0.620} \\
-GPT-5 mini & \textbf{Ours from simplest} & \underline{0.452} & \underline{0.350} & 0.454 & \underline{0.176} & \underline{0.750} \\
-\midrule
-Qwen3-80B-A3B & Human & 0.575 & 0.270 & \textbf{0.668} & 0.272 & 0.890 \\
-Qwen3-80B-A3B & AutoCalibrate & \underline{0.595} & \underline{0.290} & 0.643 & \textbf{0.310} & 0.850 \\
-Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.636} & \textbf{0.410} & \underline{0.645} & \underline{0.295} & \textbf{0.660} \\
-Qwen3-80B-A3B & \textbf{Ours from simplest} & 0.509 & \underline{0.290} & 0.558 & 0.214 & \underline{0.820} \\
-\bottomrule
-\end{tabular}
-\caption{Zero-shot evaluation results on ASAP 2.0. Bold and underlined values indicate the best and second-best scores for each model.}
-\label{tab:asap2}
-\end{table*}
-
 \section{Experiments}
 \label{sec:experiments}
 
@@ -293,32 +240,6 @@ We report QWK, accuracy, spearman correlation, Macro-F1, and MAE(mean absolute e
 \subsection{Main Results}
 \label{sec:main_results}
 Results on ASAP, ASAP 2.0 and TOEFL11 are provided in Tables~\ref{tab:asap1},~\ref{tab:asap2} and~\ref{tab:toefl} respectively. For ASAP and ASAP 2.0, our method outperforms both the human rubric and AutoCalibrate baselines across all three models, with QWK gains of up to +0.438 over the human rubric (GPT-5-mini on ASAP) and +0.233 over AutoCalibrate (Qwen3-80B-A3B on ASAP). For TOEFL11, our method also achieves the best performance for two out of three models starting from simplest seed rubrics.
-
-\begin{table*}[t]
-\centering
-\begin{tabular}{llrrrrr}
-\toprule
-LLM & Rubric written by & QWK & Accuracy & Spearman & Macro-F1 & MAE \\
-\midrule
-Gemini 3 Flash & Human & \underline{0.574} & 0.690 & \underline{0.621} & \underline{0.636} & 0.320 \\
-Gemini 3 Flash & AutoCalibrate & 0.510 & 0.650 & 0.528 & 0.591 & 0.360 \\
-Gemini 3 Flash & \textbf{Ours} & 0.557 & \underline{0.720} & 0.568 & 0.630 & \underline{0.280} \\
-Gemini 3 Flash & \textbf{Ours from simplest} & \textbf{0.663} & \textbf{0.770} & \textbf{0.672} & \textbf{0.712} & \textbf{0.230} \\
-\midrule
-GPT-5 mini & Human & \underline{0.447} & \underline{0.680} & \underline{0.475} & 0.528 & \underline{0.320} \\
-GPT-5 mini & AutoCalibrate & \textbf{0.539} & \textbf{0.730} & \textbf{0.580} & \textbf{0.578} & \textbf{0.270} \\
-GPT-5 mini & \textbf{Ours} & 0.348 & 0.650 & 0.367 & 0.493 & 0.360 \\
-GPT-5 mini & \textbf{Ours from simplest} & 0.394 & 0.640 & 0.391 & \underline{0.545} & 0.370 \\
-\midrule
-Qwen3-80B-A3B & Human & 0.364 & 0.470 & \underline{0.476} & 0.423 & 0.560 \\
-Qwen3-80B-A3B & AutoCalibrate & \underline{0.456} & 0.580 & 0.464 & \textbf{0.545} & 0.440 \\
-Qwen3-80B-A3B & \textbf{Ours} & 0.452 & \underline{0.590} & 0.468 & 0.516 & \underline{0.420} \\
-Qwen3-80B-A3B & \textbf{Ours from simplest} & \textbf{0.493} & \textbf{0.600} & \textbf{0.502} & \underline{0.544} & \textbf{0.400} \\
-\bottomrule
-\end{tabular}
-\caption{Zero-shot evaluation results on TOEFL11. Bold and underlined values indicate the best and second-best scores for each model.}
-\label{tab:toefl}
-\end{table*}
 
 \subsection{Refinement from Simplest Seed Rubric}
 \label{sec:simplest_seed}
@@ -355,13 +276,30 @@ TOEFL11 & GPT-5 mini & 0.394 & $-$0.053 \\
 \label{sec:analysis}
 
 \paragraph{Analysis of Refined Rubrics}
-\input{figures/pattern_overview}
+\begin{table*}[t]
+\centering
+\begin{tabular}{lp{5.5cm}rrr}
+\toprule
+Pattern & Example Snippet & Before & After & $\Delta$ \\
+\midrule
+Conditional Gating & \textit{…If it explores the "how" and "why" behind…} & 0.0 & 21.2 & +21.2 \\
+Quantitative Threshold & \textit{…elaboration is limited to 2-3 sentences per point, it should …} & 0.0 & 9.1 & +9.1 \\
+Concrete Exemplification & \textit{…if minor factual inaccuracies exist (e.g., misspelled names like…} & 0.3 & 7.0 & +6.7 \\
+Score Cap / Demotion & \textit{…Do not award a 5 if the essay’s analysis is…} & 0.0 & 2.7 & +2.7 \\
+Boundary / Tie-Break & \textit{…- A 5 vs. 6 Distinction: A 6 must explore broader…} & 0.0 & 2.6 & +2.6 \\
+Stepwise Workflow & \textit{…scoring algorithm (must be followed in order) Step 1…} & 0.0 & 2.6 & +2.6 \\
+\bottomrule
+\end{tabular}
+\caption{Regex-based match counts in human-authored rubrics (\textbf{Before}) vs.\ iteratively refined rubrics (\textbf{After}), averaged over 9 runs. Each pattern is detected by case-insensitive keyword matching. \textbf{Conditional Gating} (\textit{if, when, unless, provided that}); \textbf{Quantitative Threshold} (\textit{at least, at most, <=, >=, N reasons/examples/sentences, N\%}); \textbf{Concrete Exemplification} (\textit{e.g., for example, for instance}); \textbf{Score Cap / Demotion} (\textit{cannot be Score, must not receive, do not award, downgrade, demotion}); \textbf{Boundary / Tie-Break} (\textit{tie-break, borderline, threshold, N vs N, between adjacent}); \textbf{Stepwise Workflow} (\textit{step N, checklist, workflow, procedure, in order}). $\Delta$ = After $-$ Before. Detailed definitions and examples of these patterns are provided in \autoref{fig:pattern_explanation} in Appendix~\ref{app:rubric_analysis}.}
+\label{tab:rubric_pattern_changes}
+
+\end{table*}
 \label{sec:qualitative}
-To understand how refinement changes rubric content, we analyze the refined rubrics compared to the original human expert rubrics. \autoref{tab:rubric_comparison} presents a word-count-based comparison of the original and refined rubrics. The refined rubrics tend to be longer up to approximately 10 times the length of the original rubrics (GPT-5 mini on TOEFL11). Overlapping words ratio between the original and refined rubrics are about 20\% on average, indicating that the refined rubrics often introduce substantial new content. Especially for GPT-5 mini, overlapping words ratio is as low as 5.1\% on ASAP and leads to a large QWK gain of +0.438 suggesting that the refinement process can discover rubric formulations that are substantially different from human-authored rubrics and better suited for the model's reasoning and scoring process. On the other hand, GPT-5 mini's refined rubric on TOEFL11 has a low overlapping words ratio of 3.3\% but does not improve over the human rubric, suggesting that not all substantial modifications lead to performance gains and have potentials for overfitting to the training set. 
+To understand how refinement changes rubric content, we analyze the refined rubrics compared to the original human expert rubrics. \autoref{tab:rubric_comparison} in Appendix \ref{app:rubric_analysis} presents a word-count-based comparison of the original and refined rubrics. The refined rubrics tend to be longer up to approximately 10 times the length of the original rubrics (GPT-5 mini on TOEFL11). Overlapping words ratio between the original and refined rubrics are about 20\% on average, indicating that the refined rubrics often introduce substantial new content. Especially for GPT-5 mini, overlapping words ratio is as low as 5.1\% on ASAP and leads to a large QWK gain of +0.438 suggesting that the refinement process can discover rubric formulations that are substantially different from human-authored rubrics and better suited for the model's reasoning and scoring process. On the other hand, GPT-5 mini's refined rubric on TOEFL11 has a low overlapping words ratio of 3.3\% but does not improve over the human rubric, suggesting that not all substantial modifications lead to performance gains and have potentials for overfitting to the training set. 
 
-We investigate what kinds of content the refinement process adds to rubrics. We apply regex matching to detect typical patterns in refined rubrics, and categorize the detected patterns into two types (\autoref{fig:pattern_overview}): \textbf{Rule Structure} patterns, which introduce explicit procedural constraints such as conditional gating (e.g., ``if the essay contains fewer than two distinct reasons''), quantitative thresholds, score caps, stepwise workflows, and boundary tie-break guidance; and \textbf{Evidence Handling} patterns, which govern how evidence quality and quantity are assessed, including requirements for concrete exemplification and safeguards against double-counting restatements as distinct support. Detailed definitions and examples of these patterns are provided in \autoref{fig:pattern_explanation} in Appendix~\ref{app:rubric_analysis}.
+We investigate what kinds of content the refinement process adds to rubrics. Through manual inspection of a sample of refined rubrics, we identified recurring linguistic and structural motifs and grouped them into six categories of rubric patterns: \textbf{Conditional Gating}, \textbf{Quantitative Threshold}, \textbf{Concrete Exemplification}, \textbf{Score Cap / Demotion}, \textbf{Boundary / Tie-Break}, and \textbf{Stepwise Workflow}. We then design regex-based detectors for each pattern and apply them to the original human rubrics and the refined rubrics, counting the number of matches for each pattern. The results are shown in \autoref{tab:rubric_pattern_changes}. Detailed definitions and examples of these patterns are provided in \autoref{fig:pattern_explanation} in Appendix~\ref{app:rubric_analysis}.
 
-\autoref{tab:rubric_pattern_changes} in Appendix~\ref{app:rubric_analysis} shows the average regex match counts across all three models on three dataset results comparing before and after refinement. The original human-authored rubrics contain almost none of these patterns: the average count is 0.0 for all Rule Structure categories and only 0.3 for Concrete Exemplification. After refinement, all categories show substantial increases. Conditional Gating exhibits the largest gain (+21.2), indicating that the refinement process frequently introduces explicit conditional rules to guide scoring decisions. Quantitative Threshold patterns (+9.1) show that the refined rubrics often specify numeric cutoffs (e.g., ``at least 2 distinct reasons'') to make scoring criteria more precise. These findings suggest that human-authored rubrics, which rely on holistic descriptors, lack the explicit procedural instructions that LLMs need for consistent scoring, and that the refinement process addresses this gap by introducing detailed decision logic and concrete evidence-assessment guidelines. 
+The original human-authored rubrics contain almost none of these patterns. After refinement, all categories show substantial increases. Conditional Gating exhibits the largest gain (+21.2), indicating that the refinement process frequently introduces explicit conditional rules to guide scoring decisions. Quantitative Threshold patterns (+9.1) show that the refined rubrics often specify numeric cutoffs to make scoring criteria more precise. Concrete Exemplification patterns suggest that the refined rubrics provide more specific examples to illustrate abstract criteria which is often missing in human rubrics. 
 \autoref{fig:rubric_pattern_bg_asap_1_google_gemini_3_flash_preview_base_expert_True_train100_iteration5_top3_bs4_8_12_mc4} in Appendix~\ref{app:rubric_analysis} provides an example of a full refined rubric with detected patterns highlighted.
 
 
@@ -412,7 +350,7 @@ Qwen3-80B-A3B & w/o Rationale & \underline{0.561} \\
 \end{table}
 
 \paragraph{Scoring Distribution Analysis}
-To visualize how rubric refinement changes scoring behavior, \autoref{fig:confusion} shows confusion matrices for Qwen3-80B-A3B with the human expert rubric versus our refined rubric across all three datasets. After refinement, the model's predicted scores show higher agreement with human labels, as indicated by stronger diagonal patterns in the confusion matrices. 
+To visualize how rubric refinement changes scoring behavior, \autoref{fig:confusion} in Appendix~\ref{app:confusion} shows confusion matrices for Qwen3-80B-A3B with the human expert rubric versus our refined rubric across all three datasets. After refinement, the model's predicted scores show higher agreement with human labels, as indicated by stronger diagonal patterns in the confusion matrices. 
 
 \paragraph{Ablation on Training Data Size}
 \begin{table}[t]
@@ -681,33 +619,22 @@ Based on the response's content, rate the response on a scale of 1 to 6.
 
 \section{Analysis of Rubric Changes}
 \label{app:rubric_analysis}
-This section provides analyses of the rubric changes introduced by our refinement method. \autoref{tab:rubric_comparison} compares word counts and lexical overlap between the seed and refined rubrics for each dataset-model pair. \autoref{fig:pattern_explanation} defines the seven structural patterns used in our regex-based rubric analysis, with representative matched snippets from refined rubrics. \autoref{tab:rubric_pattern_changes} reports the average pattern match counts before and after refinement. \autoref{fig:rubric_pattern_bg_asap_1_google_gemini_3_flash_preview_base_expert_True_train100_iteration5_top3_bs4_8_12_mc4} shows a full refined rubric with detected patterns highlighted.
+This section provides analyses of the rubric changes introduced by our refinement method. \autoref{tab:rubric_comparison} compares word counts and lexical overlap between the seed and refined rubrics for each dataset-model pair. \autoref{fig:pattern_explanation} defines the six structural patterns used in our regex-based rubric analysis, with representative matched snippets from refined rubrics. \autoref{fig:rubric_pattern_bg_asap_1_google_gemini_3_flash_preview_base_expert_True_train100_iteration5_top3_bs4_8_12_mc4} shows a full refined rubric with detected patterns highlighted.
 
 \input{figures/tab_rubric_comparison}
 \input{figures/fig_pattern_explanation}
 
-\begin{table*}[t]
-\centering
-\begin{tabular}{llrrr}
-\toprule
-Category & Pattern & Before & After & $\Delta$ \\
-\midrule
-Rule Structure & Conditional Gating & 0.0 & 21.2 & +21.2 \\
- & Quantitative Threshold & 0.0 & 9.1 & +9.1 \\
- & Score Cap / Demotion & 0.0 & 2.7 & +2.7 \\
- & Stepwise Workflow & 0.0 & 2.6 & +2.6 \\
- & Boundary / Tie-Break & 0.0 & 2.6 & +2.6 \\
-\midrule
-Evidence Handling & Concrete Exemplification & 0.3 & 11.0 & +10.7 \\
- & Evidence Count Safeguard & 0.0 & 2.3 & +2.3 \\
-\bottomrule
-\end{tabular}
-\caption{Regex-based match counts in human-authored rubrics (\textbf{Before}) vs.\ iteratively refined rubrics (\textbf{After}), averaged over three models and three datasets. Each pattern is detected by case-insensitive keyword matching. \textsc{Rule Structure}: \textbf{Conditional Gating} (\textit{if, when, unless, provided that}); \textbf{Quantitative Threshold} (\textit{at least, at most, <=, >=, N reasons/examples/sentences, N\%}); \textbf{Score Cap / Demotion} (\textit{cannot be Score, must not receive, do not award, downgrade, demotion}); \textbf{Stepwise Workflow} (\textit{step N, checklist, workflow, procedure, in order}); \textbf{Boundary / Tie-Break} (\textit{tie-break, borderline, threshold, N vs N, between adjacent}). \textsc{Evidence Handling}: \textbf{Concrete Exemplification} (\textit{specific example, concrete example, concrete detail, anecdote, personal experience, explicit evidence, e.g., for example, for instance}); \textbf{Evidence Count Safeguard} (\textit{do not count, not mechanically, do not equate, not equivalent, repetition, restatement, double-count, rephrasing, near-duplicate}). $\Delta$ = After $-$ Before.}
-\label{tab:rubric_pattern_changes}
-\end{table*}
-
 
 \input{figures/rubric_pattern_highlights_bg/fig_rubric_with_pattern_highlight_asap_1_google_gemini_3_flash_preview_base_expert_True_train100_iteration5_top3_bs4_8_12_mc4.tex}
 
+\section{Confusion Matrices}
+\label{app:confusion}
+\autoref{fig:confusion} presents confusion matrices comparing the scoring behavior of Qwen3-80B-A3B under the human expert rubric and our refined rubric across all three datasets. Each matrix is row-normalized to show the distribution of predicted scores for each gold label; raw counts are overlaid. After refinement, predictions become more concentrated along the diagonal, reflecting improved alignment with human annotations and reduced off-diagonal errors.
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.75\textwidth]{figures/confusion_matrices.pdf}
+\caption{Confusion matrices for Qwen3-80B-A3B with the human expert rubric (top) and our refined rubric (bottom) across three datasets. Cell colors indicate row-normalized proportions; numbers show raw counts. Our refined rubric produces predictions more concentrated along the diagonal, indicating better agreement with human annotations.}
+\label{fig:confusion}
+\end{figure*}
 \end{document}

@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.patches import Rectangle
 
-from pattern_config import PATTERNS, TYPE_ORDER, TYPE_INFO
+from pattern_config import PATTERNS
 
 
 # ── パターンごとの背景色 (Material Design 200) ───────────

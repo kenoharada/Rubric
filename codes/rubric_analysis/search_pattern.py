@@ -12,16 +12,15 @@ LaTeX 表を出力する。
 """
 
 import argparse
+import random
 import re
 from collections import defaultdict
 from pathlib import Path
 
-from pattern_config import PATTERNS, TYPE_ORDER, TYPE_INFO
+from pattern_config import PATTERNS
 
 
 # ── helpers ─────────────────────────────────────────────────
-
-TYPE_LABELS = {tid: info["label_en"] for tid, info in TYPE_INFO.items()}
 
 
 def get_enabled_patterns():
@@ -31,6 +30,55 @@ def get_enabled_patterns():
 def count_matches(text: str, regex: str) -> int:
     """テキスト中の正規表現マッチ総数を返す (case-insensitive)。"""
     return len(re.findall(regex, text, re.IGNORECASE))
+
+
+def escape_latex(text: str) -> str:
+    """LaTeX 特殊文字をエスケープする。"""
+    replacements = [
+        ('\\', r'\textbackslash{}'),
+        ('&', r'\&'),
+        ('%', r'\%'),
+        ('$', r'\$'),
+        ('#', r'\#'),
+        ('_', r'\_'),
+        ('{', r'\{'),
+        ('}', r'\}'),
+        ('~', r'\textasciitilde{}'),
+        ('^', r'\textasciicircum{}'),
+    ]
+    for char, repl in replacements:
+        text = text.replace(char, repl)
+    return text
+
+
+def find_sample_snippet(
+    text: str, regex: str, context_chars: int = 25, max_len: int = 60
+) -> str:
+    """テキストからランダムに1つのマッチを選び、周辺コンテキスト付きスニペットを返す。
+
+    毎回の実行で異なるスニペットが選ばれる。
+    """
+    matches = list(re.finditer(regex, text, re.IGNORECASE))
+    if not matches:
+        return ""
+
+    m = random.choice(matches)
+
+    start = max(0, m.start() - context_chars)
+    end = min(len(text), m.end() + context_chars)
+    snippet = text[start:end].replace('\n', ' ').strip()
+
+    # max_len を超える場合はマッチ中心でトリム
+    if len(snippet) > max_len:
+        offset = m.start() - start
+        mid = offset + len(m.group()) // 2
+        half = max_len // 2
+        s = max(0, mid - half)
+        snippet = snippet[s:s + max_len].strip()
+
+    prefix = "\u2026" if start > 0 else ""
+    suffix = "\u2026" if end < len(text) else ""
+    return prefix + snippet + suffix
 
 
 def find_run_dirs(results_dir: Path, config_name: str) -> list[dict]:
@@ -63,7 +111,7 @@ def find_run_dirs(results_dir: Path, config_name: str) -> list[dict]:
 
 
 def analyze_rubric_pair(initial_path: Path, best_path: Path, patterns: list[dict]):
-    """initial / best のペアについてパターンマッチ数を返す。"""
+    """initial / best のペアについてパターンマッチ数とサンプルスニペットを返す。"""
     initial_text = initial_path.read_text(encoding="utf-8") if initial_path.exists() else ""
     best_text = best_path.read_text(encoding="utf-8") if best_path.exists() else ""
 
@@ -71,13 +119,13 @@ def analyze_rubric_pair(initial_path: Path, best_path: Path, patterns: list[dict
     best_len = len(best_text)
 
     results = []
+    samples: dict[str, str] = {}
     for p in patterns:
         bc = count_matches(initial_text, p["regex"])
         ac = count_matches(best_text, p["regex"])
         results.append({
             "pattern_id": p["pattern_id"],
             "name_en": p["name_en"],
-            "type_id": p["type_id"],
             "before_count": bc,
             "after_count": ac,
             "delta": ac - bc,
@@ -85,7 +133,11 @@ def analyze_rubric_pair(initial_path: Path, best_path: Path, patterns: list[dict
             "before_density": (bc / init_len * 1000) if init_len else 0.0,
             "after_density": (ac / best_len * 1000) if best_len else 0.0,
         })
-    return results, init_len, best_len
+        # best rubric からランダムなサンプルスニペットを抽出
+        snippet = find_sample_snippet(best_text, p["regex"])
+        if snippet:
+            samples[p["pattern_id"]] = snippet
+    return results, init_len, best_len, samples
 
 
 # ── LaTeX 出力 ──────────────────────────────────────────────
@@ -95,35 +147,22 @@ def _build_caption(
     patterns: list[dict],
     n_runs: int,
     use_density: bool,
+    sorted_pids: list[str],
 ) -> str:
     """表のキャプションを動的に構築する。"""
     metric = "density (per 1\\,k chars)" if use_density else "match counts"
 
-    # パターン説明をカテゴリ別に構築
-    # enabled かつ結果に含まれるパターンのみ
-    result_pids = {r["pattern_id"] for r in all_results[0]}
-    pat_by_type: dict[str, list[dict]] = defaultdict(list)
-    for p in patterns:
-        if p["pattern_id"] in result_pids:
-            pat_by_type[p["type_id"]].append(p)
-
-    type_descs: list[str] = []
-    for type_id in TYPE_ORDER:
-        pats = pat_by_type.get(type_id)
-        if not pats:
-            continue
-        label = TYPE_LABELS.get(type_id, type_id)
-        pat_strs = []
-        for p in sorted(pats, key=lambda x: x["pattern_id"]):
+    # パターン説明を構築 (表と同じ順序)
+    pid_to_pat = {p["pattern_id"]: p for p in patterns}
+    pat_strs: list[str] = []
+    for pid in sorted_pids:
+        p = pid_to_pat.get(pid)
+        if p:
             cues = p.get("cues_en", "")
             pat_strs.append(
                 rf"\textbf{{{p['name_en']}}} (\textit{{{cues}}})"
             )
-        type_descs.append(
-            rf"\textsc{{{label}}}: " + "; ".join(pat_strs)
-        )
-
-    pattern_note = ". ".join(type_descs) + "."
+    pattern_note = "; ".join(pat_strs) + "."
 
     caption = (
         rf"Regex-based {metric} in human-authored rubrics "
@@ -142,9 +181,12 @@ def generate_latex_table(
     config_name: str,
     patterns: list[dict],
     use_density: bool = False,
+    all_samples: dict[str, str] | None = None,
 ) -> str:
     """集約された結果から LaTeX booktabs 表を生成する。"""
     n_runs = len(all_results)
+    if all_samples is None:
+        all_samples = {}
 
     # パターンごとに集約
     agg: dict[str, dict[str, list]] = defaultdict(
@@ -163,52 +205,53 @@ def generate_latex_table(
     # パターンメタ情報 (先頭 run から)
     meta = {r["pattern_id"]: r for r in all_results[0]}
 
-    caption = _build_caption(all_results, patterns, n_runs, use_density)
+    # After の平均値が大きい順にソート
+    def _after_avg(pid):
+        a = agg[pid]
+        if use_density:
+            return sum(a["after_d"]) / n_runs
+        return sum(a["after"]) / n_runs
+
+    sorted_pids = sorted(meta.keys(), key=_after_avg, reverse=True)
+
+    caption = _build_caption(all_results, patterns, n_runs, use_density, sorted_pids)
 
     lines: list[str] = []
-    lines.append(r"\begin{table}[t]")
+    lines.append(r"\begin{table*}[t]")
     lines.append(r"\centering")
-    lines.append(r"\begin{tabular}{llrrr}")
+    # lines.append(r"\small")
+    lines.append(r"\begin{tabular}{lp{5.5cm}rrr}")
     lines.append(r"\toprule")
-    lines.append(r"Category & Pattern & Before & After & $\Delta$ \\")
+    lines.append(r"Pattern & Example Snippet & Before & After & $\Delta$ \\")
     lines.append(r"\midrule")
 
-    for ti, type_id in enumerate(TYPE_ORDER):
-        type_patterns = sorted(
-            [m for m in meta.values() if m["type_id"] == type_id],
-            key=lambda x: x["pattern_id"],
+    for pid in sorted_pids:
+        pm = meta[pid]
+        a = agg[pid]
+
+        if use_density:
+            bv = sum(a["before_d"]) / n_runs
+            av = sum(a["after_d"]) / n_runs
+        else:
+            bv = sum(a["before"]) / n_runs
+            av = sum(a["after"]) / n_runs
+        dv = av - bv
+
+        bs = f"{bv:.1f}"
+        as_ = f"{av:.1f}"
+        ds = f"{dv:+.1f}"
+
+        snippet_raw = all_samples.get(pid, "")
+        snippet_tex = rf"\textit{{{escape_latex(snippet_raw)}}}" if snippet_raw else ""
+        lines.append(
+            f"{pm['name_en']} & {snippet_tex} & {bs} & {as_} & {ds} \\\\"
         )
-        if not type_patterns:
-            continue
-
-        for i, pm in enumerate(type_patterns):
-            pid = pm["pattern_id"]
-            a = agg[pid]
-
-            if use_density:
-                bv = sum(a["before_d"]) / n_runs
-                av = sum(a["after_d"]) / n_runs
-            else:
-                bv = sum(a["before"]) / n_runs
-                av = sum(a["after"]) / n_runs
-            dv = av - bv
-
-            bs = f"{bv:.1f}"
-            as_ = f"{av:.1f}"
-            ds = f"{dv:+.1f}"
-
-            cat = TYPE_LABELS.get(type_id, type_id) if i == 0 else ""
-            lines.append(f"{cat} & {pm['name_en']} & {bs} & {as_} & {ds} \\\\")
-
-        # カテゴリ間に midrule
-        if ti < len(TYPE_ORDER) - 1:
-            lines.append(r"\midrule")
 
     lines.append(r"\bottomrule")
     lines.append(r"\end{tabular}")
     lines.append(rf"\caption{{{caption}}}")
     lines.append(r"\label{tab:rubric_pattern_changes}")
-    lines.append(r"\end{table}")
+    lines.append(r"\end{table*}")
     return "\n".join(lines)
 
 
@@ -303,6 +346,8 @@ def main():
 
     # ── 分析 ──
     all_results: list[list[dict]] = []
+    # pattern_id -> list[snippet] : 全 run から候補を集め最後にランダム選択
+    sample_candidates: dict[str, list[str]] = defaultdict(list)
     valid_runs: list[dict] = []
     for run in all_runs:
         initial = run["path"] / "initial_rubric.txt"
@@ -310,9 +355,11 @@ def main():
         if not initial.exists() or not best.exists():
             print(f"  ⚠ rubric ファイル不足: {run['path']}")
             continue
-        results, il, bl = analyze_rubric_pair(initial, best, patterns)
+        results, il, bl, samples = analyze_rubric_pair(initial, best, patterns)
         all_results.append(results)
         valid_runs.append(run)
+        for pid, snippet in samples.items():
+            sample_candidates[pid].append(snippet)
         if args.verbose:
             print(f"  {run['dataset']}/{run['model']}  (init={il} chars, best={bl} chars)")
 
@@ -324,8 +371,17 @@ def main():
     if args.verbose:
         print(generate_per_run_table(all_results, valid_runs))
 
+    # ── 各パターンのサンプルスニペットをランダムに1つ選択 ──
+    all_samples: dict[str, str] = {
+        pid: random.choice(candidates)
+        for pid, candidates in sample_candidates.items()
+    }
+
     # ── LaTeX 出力 ──
-    latex = generate_latex_table(all_results, args.config, patterns, use_density=args.density)
+    latex = generate_latex_table(
+        all_results, args.config, patterns,
+        use_density=args.density, all_samples=all_samples,
+    )
 
     if args.output:
         out_path = Path(args.output)

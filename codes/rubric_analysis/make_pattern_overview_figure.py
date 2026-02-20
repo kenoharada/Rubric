@@ -11,25 +11,9 @@ pattern_config.py の enabled パターンを読み込み、
 """
 
 import argparse
-from collections import defaultdict
 from pathlib import Path
 
-from pattern_config import PATTERNS, TYPE_ORDER, TYPE_INFO
-
-# ── カテゴリ配色 (TikZ color 定義用) ─────────────────────
-
-TYPE_STYLES = {
-    "rule_structure": {
-        "header_bg": "RuleHdr",   # 定義は TikZ 側
-        "card_frame": "RuleFrame",
-        "card_bg": "RuleBg",
-    },
-    "evidence_handling": {
-        "header_bg": "EvidHdr",
-        "card_frame": "EvidFrame",
-        "card_bg": "EvidBg",
-    },
-}
+from pattern_config import PATTERNS
 
 # パターンごとの (表示名, キーワード説明)
 # カード幅に収まるよう短くする
@@ -57,12 +41,6 @@ def get_enabled_patterns():
 def generate_tikz() -> str:
     patterns = get_enabled_patterns()
 
-    pat_by_type: dict[str, list[dict]] = defaultdict(list)
-    for p in patterns:
-        pat_by_type[p["type_id"]].append(p)
-
-    active_types = [t for t in TYPE_ORDER if pat_by_type.get(t)]
-
     # ── TikZ ヘッダ ──
     lines: list[str] = []
     lines.append(r"\begin{figure}[t]")
@@ -73,134 +51,113 @@ def generate_tikz() -> str:
     lines.append(r"]")
     lines.append("")
     lines.append(r"% ── colors ──")
-    lines.append(r"\definecolor{RuleHdr}{HTML}{2B6CB0}")
-    lines.append(r"\definecolor{RuleFrame}{HTML}{90BEE0}")
-    lines.append(r"\definecolor{RuleBg}{HTML}{EBF4FA}")
-    lines.append(r"\definecolor{EvidHdr}{HTML}{B7791F}")
-    lines.append(r"\definecolor{EvidFrame}{HTML}{E2C97A}")
-    lines.append(r"\definecolor{EvidBg}{HTML}{FEFCF3}")
+    lines.append(r"\definecolor{PatHdr}{HTML}{2B6CB0}")
+    lines.append(r"\definecolor{PatFrame}{HTML}{90BEE0}")
+    lines.append(r"\definecolor{PatBg}{HTML}{EBF4FA}")
     lines.append("")
 
-    # ── レイアウト定数 (上下配置・フル幅・1行カード) ──
-    box_w = 7.0     # cm — ボックス幅 (カラム幅に合わせる)
-    card_h = 0.40   # cm — パターンカード高さ (1行)
-    card_gap = 0.08  # cm — カード間
-    hdr_h = 0.38    # cm — ヘッダ高さ
-    pad = 0.10      # cm — ヘッダ↔カード, カード↔底辺
-    gap_y = 0.20    # cm — カテゴリ間の縦ギャップ
+    # ── レイアウト定数 ──
+    box_w = 7.0     # cm
+    card_h = 0.40   # cm
+    card_gap = 0.08  # cm
+    hdr_h = 0.38    # cm
+    pad = 0.10      # cm
 
-    # カテゴリボックス高さ算出
-    def box_height(n_pats):
-        return hdr_h + pad + n_pats * card_h + (n_pats - 1) * card_gap + pad
+    n = len(patterns)
+    this_h = hdr_h + pad + n * card_h + (n - 1) * card_gap + pad
 
-    # ── カテゴリを上から下へ描画 ──
-    y_cursor = 0.0  # 上端から開始
+    x0 = 0.0
+    y_top = 0.0
+    y_bot = y_top - this_h
 
-    for ti, type_id in enumerate(active_types):
-        pats = pat_by_type[type_id]
-        styles = TYPE_STYLES.get(type_id, TYPE_STYLES["rule_structure"])
-        info = TYPE_INFO[type_id]
-        n = len(pats)
-        this_h = box_height(n)
+    lines.append(r"% ── Patterns ──")
 
-        x0 = 0.0
-        y_top = -y_cursor
-        y_bot = y_top - this_h
+    # 背景ボックス
+    lines.append(
+        rf"\fill[PatBg, rounded corners=3pt]"
+        rf" ({x0:.2f},{y_bot:.2f})"
+        rf" rectangle ({x0 + box_w:.2f},{y_top:.2f});"
+    )
+    # 外枠
+    lines.append(
+        rf"\draw[PatFrame, rounded corners=3pt, line width=0.6pt]"
+        rf" ({x0:.2f},{y_bot:.2f})"
+        rf" rectangle ({x0 + box_w:.2f},{y_top:.2f});"
+    )
 
-        lines.append(f"% ── {info['label_en']} ──")
+    # ヘッダ
+    lines.append(r"\begin{scope}")
+    lines.append(
+        rf"  \clip[rounded corners=3pt]"
+        rf" ({x0:.2f},{y_bot:.2f})"
+        rf" rectangle ({x0 + box_w:.2f},{y_top:.2f});"
+    )
+    lines.append(
+        rf"  \fill[PatHdr]"
+        rf" ({x0:.2f},{y_top - hdr_h:.2f})"
+        rf" rectangle ({x0 + box_w:.2f},{y_top:.2f});"
+    )
+    lines.append(r"\end{scope}")
 
-        # 背景ボックス
+    # ヘッダテキスト
+    cx = x0 + box_w / 2
+    cy = y_top - hdr_h / 2
+    lines.append(
+        rf"\node[anchor=center, text=white, font=\small\bfseries\sffamily]"
+        rf" at ({cx:.2f},{cy:.2f}) {{Rubric Refinement Patterns}};"
+    )
+
+    # パターンカード
+    card_y = y_top - hdr_h - pad
+    card_pad_x = 0.10
+    text_pad = 0.10
+
+    for pi, p in enumerate(patterns):
+        pid = p["pattern_id"]
+        short = PATTERN_SHORT.get(pid)
+        if short:
+            name, cues = short
+        else:
+            name, cues = p["name_en"], p.get("cues_en", "")
+
+        cy_top = card_y
+        cy_bot = card_y - card_h
+        cy_mid = (cy_top + cy_bot) / 2
+
+        # カード背景
         lines.append(
-            rf"\fill[{styles['card_bg']}, rounded corners=3pt]"
-            rf" ({x0:.2f},{y_bot:.2f})"
-            rf" rectangle ({x0 + box_w:.2f},{y_top:.2f});"
-        )
-        # 外枠
-        lines.append(
-            rf"\draw[{styles['card_frame']}, rounded corners=3pt, line width=0.6pt]"
-            rf" ({x0:.2f},{y_bot:.2f})"
-            rf" rectangle ({x0 + box_w:.2f},{y_top:.2f});"
-        )
-
-        # ヘッダ (角丸の上半分 — clip で実現)
-        lines.append(r"\begin{scope}")
-        lines.append(
-            rf"  \clip[rounded corners=3pt]"
-            rf" ({x0:.2f},{y_bot:.2f})"
-            rf" rectangle ({x0 + box_w:.2f},{y_top:.2f});"
+            rf"\fill[white, rounded corners=2pt]"
+            rf" ({x0 + card_pad_x:.2f},{cy_bot:.2f})"
+            rf" rectangle ({x0 + box_w - card_pad_x:.2f},{cy_top:.2f});"
         )
         lines.append(
-            rf"  \fill[{styles['header_bg']}]"
-            rf" ({x0:.2f},{y_top - hdr_h:.2f})"
-            rf" rectangle ({x0 + box_w:.2f},{y_top:.2f});"
+            rf"\draw[PatFrame, rounded corners=2pt, line width=0.4pt]"
+            rf" ({x0 + card_pad_x:.2f},{cy_bot:.2f})"
+            rf" rectangle ({x0 + box_w - card_pad_x:.2f},{cy_top:.2f});"
         )
-        lines.append(r"\end{scope}")
 
-        # ヘッダテキスト
-        cx = x0 + box_w / 2
-        cy = y_top - hdr_h / 2
+        # パターン名 (左寄せ)
+        tx_l = x0 + card_pad_x + text_pad
         lines.append(
-            rf"\node[anchor=center, text=white, font=\small\bfseries\sffamily]"
-            rf" at ({cx:.2f},{cy:.2f}) {{{info['label_en']}}};"
+            rf"\node[anchor=west, font=\footnotesize\bfseries]"
+            rf" at ({tx_l:.2f},{cy_mid:.2f}) {{{name}}};"
+        )
+        # キーワード (右寄せ)
+        tx_r = x0 + box_w - card_pad_x - text_pad
+        lines.append(
+            rf"\node[anchor=east, font={{\fontsize{{7.5}}{{9}}\selectfont}}, text=black!50]"
+            rf" at ({tx_r:.2f},{cy_mid:.2f}) {{{cues}}};"
         )
 
-        # パターンカード (1行: 名前=左, キーワード=右)
-        card_y = y_top - hdr_h - pad
-        card_pad_x = 0.10
-        text_pad = 0.10  # カード内パディング
+        card_y = cy_bot - card_gap
 
-        for pi, p in enumerate(pats):
-            pid = p["pattern_id"]
-            short = PATTERN_SHORT.get(pid)
-            if short:
-                name, cues = short
-            else:
-                name, cues = p["name_en"], p.get("cues_en", "")
-
-            cy_top = card_y
-            cy_bot = card_y - card_h
-            cy_mid = (cy_top + cy_bot) / 2
-
-            # カード背景
-            lines.append(
-                rf"\fill[white, rounded corners=2pt]"
-                rf" ({x0 + card_pad_x:.2f},{cy_bot:.2f})"
-                rf" rectangle ({x0 + box_w - card_pad_x:.2f},{cy_top:.2f});"
-            )
-            lines.append(
-                rf"\draw[{styles['card_frame']}, rounded corners=2pt, line width=0.4pt]"
-                rf" ({x0 + card_pad_x:.2f},{cy_bot:.2f})"
-                rf" rectangle ({x0 + box_w - card_pad_x:.2f},{cy_top:.2f});"
-            )
-
-            # パターン名 (左寄せ)
-            tx_l = x0 + card_pad_x + text_pad
-            lines.append(
-                rf"\node[anchor=west, font=\footnotesize\bfseries]"
-                rf" at ({tx_l:.2f},{cy_mid:.2f}) {{{name}}};"
-            )
-            # キーワード (右寄せ)
-            tx_r = x0 + box_w - card_pad_x - text_pad
-            lines.append(
-                rf"\node[anchor=east, font={{\fontsize{{7.5}}{{9}}\selectfont}}, text=black!50]"
-                rf" at ({tx_r:.2f},{cy_mid:.2f}) {{{cues}}};"
-            )
-
-            card_y = cy_bot - card_gap
-
-        lines.append("")
-
-        y_cursor += this_h + gap_y
+    lines.append("")
 
     # ── 閉じ ──
     lines.append(r"\end{tikzpicture}")
     lines.append(
         r"\caption{Overview of regex-based patterns used to quantify "
         r"rubric changes through iterative refinement. "
-        r"\textsc{Rule Structure} patterns capture procedural and "
-        r"structural constraints that guide the scoring process; "
-        r"\textsc{Evidence Handling} patterns capture rules governing "
-        r"how evidence quality and quantity are assessed. "
         r"Each pattern is detected by case-insensitive keyword matching "
         r"against the rubric text.}"
     )

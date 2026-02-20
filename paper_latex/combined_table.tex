@@ -1,0 +1,56 @@
+\begin{table*}[t!]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lllrrr}
+\toprule
+Dataset & LLM & Rubric written by & QWK & Accuracy & Spearman \\
+\midrule
+\multirow{12}{*}{ASAP} & Gemini 3 Flash & Human & 0.427 & 0.404 & 0.568 \\
+ & Gemini 3 Flash & AutoCalibrate & 0.489 & 0.590 & 0.493 \\
+ & Gemini 3 Flash & \textbf{Ours} & \textbf{0.646} & \textbf{0.680} & \textbf{0.656} \\
+ & Gemini 3 Flash & \textbf{Ours from simplest} & \underline{0.580} & \underline{0.650} & \underline{0.619} \\
+\cmidrule(lr){2-6}
+ & GPT-5 mini & Human & 0.042 & 0.110 & 0.151 \\
+ & GPT-5 mini & AutoCalibrate & \underline{0.390} & \underline{0.410} & \underline{0.396} \\
+ & GPT-5 mini & \textbf{Ours} & \textbf{0.480} & \textbf{0.450} & \textbf{0.510} \\
+ & GPT-5 mini & \textbf{Ours from simplest} & 0.314 & 0.360 & 0.282 \\
+\cmidrule(lr){2-6}
+ & Qwen3-80B-A3B & Human & 0.121 & 0.130 & 0.323 \\
+ & Qwen3-80B-A3B & AutoCalibrate & \underline{0.240} & 0.310 & \underline{0.458} \\
+ & Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.473} & \textbf{0.520} & \textbf{0.490} \\
+ & Qwen3-80B-A3B & \textbf{Ours from simplest} & 0.154 & \underline{0.320} & 0.188 \\
+\midrule
+\multirow{12}{*}{ASAP 2.0} & Gemini 3 Flash & Human & 0.613 & 0.440 & 0.657 \\
+ & Gemini 3 Flash & AutoCalibrate & 0.646 & \underline{0.490} & \textbf{0.716} \\
+ & Gemini 3 Flash & \textbf{Ours} & \textbf{0.700} & \textbf{0.540} & \underline{0.716} \\
+ & Gemini 3 Flash & \textbf{Ours from simplest} & \underline{0.651} & 0.470 & 0.682 \\
+\cmidrule(lr){2-6}
+ & GPT-5 mini & Human & 0.358 & \underline{0.350} & \underline{0.533} \\
+ & GPT-5 mini & AutoCalibrate & 0.338 & 0.340 & 0.514 \\
+ & GPT-5 mini & \textbf{Ours} & \textbf{0.537} & \textbf{0.440} & \textbf{0.618} \\
+ & GPT-5 mini & \textbf{Ours from simplest} & \underline{0.452} & \underline{0.350} & 0.454 \\
+\cmidrule(lr){2-6}
+ & Qwen3-80B-A3B & Human & 0.575 & 0.270 & \textbf{0.668} \\
+ & Qwen3-80B-A3B & AutoCalibrate & \underline{0.595} & \underline{0.290} & 0.643 \\
+ & Qwen3-80B-A3B & \textbf{Ours} & \textbf{0.636} & \textbf{0.410} & \underline{0.645} \\
+ & Qwen3-80B-A3B & \textbf{Ours from simplest} & 0.509 & \underline{0.290} & 0.558 \\
+\midrule
+\multirow{12}{*}{TOEFL11} & Gemini 3 Flash & Human & \underline{0.574} & 0.690 & \underline{0.621} \\
+ & Gemini 3 Flash & AutoCalibrate & 0.510 & 0.650 & 0.528 \\
+ & Gemini 3 Flash & \textbf{Ours} & 0.557 & \underline{0.720} & 0.568 \\
+ & Gemini 3 Flash & \textbf{Ours from simplest} & \textbf{0.663} & \textbf{0.770} & \textbf{0.672} \\
+\cmidrule(lr){2-6}
+ & GPT-5 mini & Human & \underline{0.447} & \underline{0.680} & \underline{0.475} \\
+ & GPT-5 mini & AutoCalibrate & \textbf{0.539} & \textbf{0.730} & \textbf{0.580} \\
+ & GPT-5 mini & \textbf{Ours} & 0.348 & 0.650 & 0.367 \\
+ & GPT-5 mini & \textbf{Ours from simplest} & 0.394 & 0.640 & 0.391 \\
+\cmidrule(lr){2-6}
+ & Qwen3-80B-A3B & Human & 0.364 & 0.470 & \underline{0.476} \\
+ & Qwen3-80B-A3B & AutoCalibrate & \underline{0.456} & 0.580 & 0.464 \\
+ & Qwen3-80B-A3B & \textbf{Ours} & 0.452 & \underline{0.590} & 0.468 \\
+ & Qwen3-80B-A3B & \textbf{Ours from simplest} & \textbf{0.493} & \textbf{0.600} & \textbf{0.502} \\
+\bottomrule
+\end{tabular}}
+\caption{Zero-shot evaluation results on all datasets. Bold and underlined values indicate the best and second-best scores for each model within each dataset.}
+\label{tab:main_results}
+\end{table*}

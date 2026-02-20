@@ -25,7 +25,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from pattern_config import PATTERNS, TYPE_INFO
+from pattern_config import PATTERNS
 
 
 @dataclass(frozen=True)
@@ -254,15 +254,12 @@ def build_pattern_block_latex(
     selected_examples: list[SnippetExample],
 ) -> str:
     pid = pattern["pattern_id"]
-    type_id = pattern.get("type_id", "other")
-    type_label = TYPE_INFO.get(type_id, {}).get("label_en", type_id)
     name_en = pattern.get("name_en") or pattern.get("name_ja") or pid.replace("_", " ").title()
     desc_en = pattern.get("description_en") or pattern.get("description_ja") or pattern.get("regex", "")
     cues_en = pattern.get("cues_en") or pattern.get("regex", "")
 
     lines: list[str] = []
     lines.append(rf"\textbf{{{index}. {latex_escape_inline(name_en)}}}")
-    lines.append(rf"\textit{{Category:}} {latex_escape_inline(type_label)}")
     lines.append(rf"\textit{{What this pattern captures:}} {latex_escape_inline(desc_en)}")
     lines.append(rf"\textit{{Typical cues:}} {latex_escape_inline(cues_en)}")
 
