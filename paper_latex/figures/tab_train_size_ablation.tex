@@ -1,0 +1,25 @@
+\begin{table}[t]
+\centering
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{llrrrr}
+\toprule
+\textbf{Dataset} & \textbf{LLM} & \textbf{Baseline} & \textbf{$N=20$} & \textbf{$N=50$} & \textbf{$N=100$} \\
+\midrule
+ASAP & Gemini 3 Flash & 0.427 & 0.267 & \underline{0.538} & \textbf{0.646} \\
+ & GPT-5 mini & 0.042 & 0.249 & \underline{0.409} & \textbf{0.480} \\
+ & Qwen3-80B-A3B & 0.121 & \underline{0.395} & 0.383 & \textbf{0.473} \\
+\midrule
+ASAP 2.0 & Gemini 3 Flash & 0.613 & \textbf{0.724} & 0.619 & \underline{0.700} \\
+ & GPT-5 mini & 0.358 & \textbf{0.544} & \underline{0.540} & 0.537 \\
+ & Qwen3-80B-A3B & 0.575 & \underline{0.616} & 0.557 & \textbf{0.636} \\
+\midrule
+TOEFL11 & Gemini 3 Flash & 0.574 & 0.519 & \textbf{0.595} & \underline{0.557} \\
+ & GPT-5 mini & 0.447 & 0.291 & \textbf{0.469} & \underline{0.348} \\
+ & Qwen3-80B-A3B & 0.364 & 0.277 & \textbf{0.459} & \underline{0.452} \\
+\bottomrule
+\end{tabular}%
+}
+\caption{Effect of training sample size ($N$) on test QWK. Baseline uses the human expert rubric without optimization. Bold indicates the best and underline indicates the second-best QWK among training sizes for each model.}
+\label{tab:train_size}
+\end{table}

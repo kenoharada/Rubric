@@ -14,18 +14,18 @@ load_model_profile() {
             MODEL_NAMES=(
                 # "openai/gpt-4.1"
                 # "google/gemini-2.5-flash"
-                "openai/gpt-5-mini"
+                # "openai/gpt-5-mini"
                 # "google/gemini-2.5-pro"
                 "qwen/qwen3-next-80b-a3b-instruct"
-                "google/gemini-3-flash-preview"
+                # "google/gemini-3-flash-preview"
             )
             PARAMS_LIST=(
                 # '{"temperature":1.0,"max_tokens":8192,"provider":{"only":["OpenAI","Google"]}}'
                 # '{"temperature":1.0,"reasoning":{"max_tokens": 0},"max_tokens":8192,"provider":{"only":["OpenAI","Google"]}}'
-                '{"reasoning":{"effort":"low"},"max_tokens":8192,"provider":{"only":["OpenAI"]}}'
+                # '{"reasoning":{"effort":"low"},"max_tokens":8192,"provider":{"only":["OpenAI"]}}'
                 # '{"temperature": 1.0,"top_p":0.95,"reasoning":{"max_tokens": 1024},"max_tokens":8192,"provider":{"only":["OpenAI","Google"]}}'
                 '{"temperature":0.7,"top_p":0.8,"top_k":20,"max_tokens":8192,"provider":{"only":["Google"]}}'
-                '{"reasoning":{"effort":"low"},"max_tokens":8192,"provider":{"only":["Google"]}}'
+                # '{"reasoning":{"effort":"low"},"max_tokens":8192,"provider":{"only":["Google"]}}'
             )
             ;;
         legacy)
@@ -101,8 +101,8 @@ load_inference_eval_hparams() {
     TRAIN_SIZES=(
         # "4"
         # "8"
-        "10"
-        "20"
+        # "10"
+        # "20"
         "50"
         # "100"
     )
@@ -119,10 +119,10 @@ load_inference_eval_hparams() {
     )
 
     DATASETS=(
-        "asap_1"
+        # "asap_1"
         # "ets"
-        # "ets3"
-        "ASAP2"
+        "ets3"
+        # "ASAP2"
     )
 
     SEED_PROMPTS=(

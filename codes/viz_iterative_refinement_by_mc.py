@@ -193,7 +193,7 @@ for dataset in datasets_available:
 
         ax.set_xlabel("Refinement Step")
         if col == 0:
-            ax.set_ylabel("Best Training QWK")
+            ax.set_ylabel("Training QWK")
         # ax.set_title(MODEL_DISPLAY.get(model, model))
         max_steps = max(len(r) for r in sub_df["qwk_values"])
         ax.set_xticks(range(0, max_steps))

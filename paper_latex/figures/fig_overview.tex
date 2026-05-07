@@ -1,0 +1,113 @@
+\begin{figure*}[t]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[>=Stealth, font=\small]
+
+% ---- Styles ----
+\tikzset{
+  stepbox/.style={
+    draw=black!30, rounded corners=4pt,
+    minimum width=3.8cm, minimum height=2.2cm,
+    align=center, line width=0.5pt,
+    inner sep=5pt, fill=white
+  },
+  iobox/.style={
+    draw=black!25, rounded corners=3pt,
+    minimum height=0.8cm, align=center,
+    fill=white, line width=0.5pt, inner sep=3pt
+  },
+  arr/.style={->, thick, black!35},
+}
+
+% ============ INPUT ============
+\node[iobox, minimum width=2.3cm] (seed) at (-3.8, 0.55) {
+  Seed Rubric $\rubric_0$
+};
+\node[iobox, minimum width=2.7cm] (data) at (-3.8, -0.55) {
+  Training Data $\{(x_i, y_i)\}$
+};
+
+% ============ STEP I: SCORE ============
+\node[stepbox] (score) at (0, 0) {
+  \textbf{I.~Score}\\[3pt]
+  Score each essay $x_i$\\
+  with current rubric $\rubric$\\[2pt]
+  {\footnotesize $(\hat{y}_i,\; z_i) = \mathrm{LLM}(\rubric,\; x_i)$}
+};
+
+% ============ STEP II: REFLECT ============
+\node[stepbox] (reflect) at (5.5, 0) {
+  \textbf{II.~Reflect}\\[3pt]
+  Collect scoring errors\\[1pt]
+  {\footnotesize $\mathcal{E} = \bigl\{(x_i, y_i, \hat{y}_i, z_i) \mid \hat{y}_i \neq y_i\bigr\}$}\\[1pt]
+  {\scriptsize Balanced sampling by score level}
+};
+
+% ============ STEP III: REVISE ============
+\node[stepbox] (revise) at (12, 0) {
+  \textbf{III.~Revise}\\[3pt]
+  Revise rubric based on\\
+  errors \textbf{+ rationales}\\[2pt]
+  {\footnotesize $\rubric' = \procname{ReviseRubric}(\rubric,\; \tilde{\mathcal{E}})$}
+};
+
+% ============ ERROR SET ILLUSTRATION ============
+\node[draw=black!25, rounded corners=4pt, fill=white,
+  inner sep=6pt] (errorset) at (8.75, -3.3) {
+  \begin{minipage}{4.6cm}
+    \centering\textbf{Error Set} $\mathcal{E}(\rubric)$\\[4pt]
+    \fcolorbox{black!10}{black!2}{\parbox{4.1cm}{\scriptsize
+      \textbf{Essay:} Paul Merson has restarted his row with\ldots\\
+      \textbf{Rationale:} The essay provides minimal elaboration\ldots\\
+      \textcolor{red!70!black}{\textbf{Predicted: 3}} \enspace \textbf{Human: 5}%
+    }}\\[3pt]
+    \fcolorbox{black!10}{black!2}{\parbox{4.1cm}{\scriptsize
+      \textbf{Essay:} Dear local newspaper, I think effects of\ldots\\
+      \textbf{Rationale:} The response takes a clear position\ldots\\
+      \textcolor{red!70!black}{\textbf{Predicted: 5}} \enspace \textbf{Human: 4}%
+    }}\\[3pt]
+    $\cdots\cdots$
+  \end{minipage}
+};
+
+% ============ TOP-K SELECTION ============
+\node[iobox, minimum width=3.2cm] (topk) at (5.5, -6) {
+  Top-$K$ selection by QWK
+};
+
+% ============ OUTPUT ============
+\node[iobox, minimum width=2.8cm] (best) at (9.5, -6) {
+  \textbf{Best Rubric} $\rubric_{\mathrm{best}}$
+};
+
+% ============ ARROWS ============
+% Input -> Score
+\draw[arr] (seed.east) -- (score.west |- seed);
+\draw[arr] (data.east) -- (score.west |- data);
+
+% Score -> Reflect
+\draw[arr] (score) -- (reflect);
+
+% Reflect -> Error Set (diagonal)
+\draw[arr] (reflect.south) -- (errorset.north west);
+
+% Error Set -> Revise (diagonal)
+\draw[arr] (errorset.north east) -- (revise.south);
+
+% Revise -> Top-K (route right of Error Set)
+\draw[arr] (revise.south east) |- (topk.east);
+
+% Top-K -> Output
+\draw[arr] (topk) -- (best);
+
+% Loop: Top-K -> Score (iteration)
+\draw[arr, dashed] (topk.west) -| (score.south);
+
+% Iteration label
+\node[font=\small, text=black!45] at (1.5, -6.4) {$\times\, T$ iterations};
+
+\end{tikzpicture}%
+}
+\caption{Overview of our Reflect-and-Revise framework. Starting from a seed rubric and training essays with human scores, the method iteratively: (\textbf{I})~scores each essay with the current rubric, producing predictions and chain-of-thought rationales; (\textbf{II})~reflects on scoring errors by collecting cases where model predictions disagree with human labels; and (\textbf{III})~revises the rubric based on sampled error cases and their rationales. A top-$K$ selection step retains the best-performing candidates by QWK for the next iteration.}
+\label{fig:overview}
+\end{figure*}

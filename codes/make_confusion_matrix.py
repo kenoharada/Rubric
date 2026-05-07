@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate confusion matrix heatmaps: Human Expert Rubric vs Ours for Qwen3-80B-A3B."""
+"""Generate confusion matrix heatmaps: Human Expert Rubric vs Ours."""
 import argparse
 import json
 import sys
@@ -17,8 +17,12 @@ from inference import parse_rating, rating_to_quality, quality_to_score_for_qwk
 
 HUMAN_RUN = "zero_shot_no_expert"
 OURS_RUN = "zero_shot_base_expert_True_train100_iteration5_top3_bs4-8-12_mc4"
-MODEL_DIR = "qwen_qwen3-next-80b-a3b-instruct"
-# MODEL_DIR = "openai_gpt-5-mini"
+DEFAULT_MODEL_DIR = "qwen_qwen3-next-80b-a3b-instruct"
+MODEL_LABELS = {
+    "google_gemini-3-flash-preview": "Gemini 3 Flash",
+    "openai_gpt-5-mini": "GPT-5 mini",
+    "qwen_qwen3-next-80b-a3b-instruct": "Qwen3-80B-A3B",
+}
 
 DATASETS = [
     {"key": "asap_1", "label": "ASAP", "scores": list(range(1, 7)), "tick_labels": None},
@@ -108,11 +112,17 @@ def main():
                         help="Root directory of evaluation results.")
     parser.add_argument("--output", default="../paper_latex/figures/confusion_matrices.pdf",
                         help="Output file path.")
+    parser.add_argument("--model-dir", default=DEFAULT_MODEL_DIR,
+                        help="Model directory name under evaluation_results.")
+    parser.add_argument("--model-label", default=None,
+                        help="Display label used in log output.")
     args = parser.parse_args()
 
     root = Path(args.root)
     if not root.exists():
         raise SystemExit(f"Root not found: {root}")
+    model_dir = args.model_dir
+    model_label = args.model_label or MODEL_LABELS.get(model_dir, model_dir)
 
     # Font and figure settings (matching paper style)
     line_width_pt = 219
@@ -151,11 +161,11 @@ def main():
     last_im = None
     for row_idx, (run_name, method_label) in enumerate(methods):
         for col_idx, ds in enumerate(DATASETS):
-            results_path = root / ds["key"] / MODEL_DIR / run_name / "results.jsonl"
+            results_path = root / ds["key"] / model_dir / run_name / "results.jsonl"
             if not results_path.exists():
                 alt_ds = scoring_dataset_for_run(ds["key"], run_name)
                 if alt_ds != ds["key"]:
-                    results_path = root / alt_ds / MODEL_DIR / run_name / "results.jsonl"
+                    results_path = root / alt_ds / model_dir / run_name / "results.jsonl"
 
             if not results_path.exists():
                 print(f"WARNING: {results_path} not found, skipping")
@@ -175,7 +185,7 @@ def main():
             # Print summary
             total = cm.sum()
             correct = np.trace(cm)
-            print(f"{ds['label']} / {method_label}: {correct}/{total} correct ({correct/total:.1%})")
+            print(f"{model_label} / {ds['label']} / {method_label}: {correct}/{total} correct ({correct/total:.1%})")
 
     # Add colorbar in the dedicated 4th column
     if last_im is not None:

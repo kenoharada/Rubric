@@ -159,15 +159,36 @@ def prepare_asap2_dataset(essay_set=1):
 
 
 if __name__ == "__main__":
+    # asap 1
     train_data, val_data, test_data = prepare_asap_dataset(essay_set=1)
     print(f"Train data size: {len(train_data)}")
     print(f"Validation data size: {len(val_data)}")
     print(f"Test data size: {len(test_data)}")
-    from sklearn.metrics import cohen_kappa_score
-    from inference import quality_to_score_for_qwk
-    y_true = [quality_to_score_for_qwk(d["answer"], dataset='asap') for d in val_data]
-    y_pred = [quality_to_score_for_qwk(d["human"], dataset='asap') for d in val_data]
-    print("Cohen's kappa:", cohen_kappa_score(y_true, y_pred, weights="quadratic"))
-    # accuracy
-    accuracy = sum(1 for yt, yp in zip(y_true, y_pred) if yt == yp) / len(y_true)
-    print("Accuracy:", accuracy)
+    # from sklearn.metrics import cohen_kappa_score
+    # from inference import quality_to_score_for_qwk
+    # y_true = [quality_to_score_for_qwk(d["answer"], dataset='asap') for d in val_data]
+    # y_pred = [quality_to_score_for_qwk(d["human"], dataset='asap') for d in val_data]
+    # print("Cohen's kappa:", cohen_kappa_score(y_true, y_pred, weights="quadratic"))
+    # # accuracy
+    # accuracy = sum(1 for yt, yp in zip(y_true, y_pred) if yt == yp) / len(y_true)
+    # print("Accuracy:", accuracy)
+    # asap 2.0
+    train_data, val_data, test_data = prepare_asap2_dataset(essay_set=1)
+    print(f"Train data size: {len(train_data)}")
+    print(f"Validation data size: {len(val_data)}")
+    print(f"Test data size: {len(test_data)}")
+    # y_true = [quality_to_score_for_qwk(d["answer"], dataset='asap2') for d in val_data]
+    # y_pred = [quality_to_score_for_qwk(d["human"], dataset='asap2') for d in val_data]
+    # print("Cohen's kappa:", cohen_kappa_score(y_true, y_pred, weights="quadratic"))
+    # accuracy = sum(1 for yt, yp in zip(y_true, y_pred) if yt == yp) / len(y_true)
+    # print("Accuracy:", accuracy)
+    # ets3
+    train_data, val_data, test_data = prepare_ets_dataset()
+    print(f"Train data size: {len(train_data)}")
+    print(f"Validation data size: {len(val_data)}")
+    print(f"Test data size: {len(test_data)}")
+    # y_true = [quality_to_score_for_qwk(d["answer"], dataset='ets') for d in val_data]
+    # y_pred = [quality_to_score_for_qwk(d["human"], dataset='ets') for d in val_data]
+    # print("Cohen's kappa:", cohen_kappa_score(y_true, y_pred, weights="quadratic"))
+    # accuracy = sum(1 for yt, yp in zip(y_true, y_pred) if yt == yp) / len(y_true)
+    # print("Accuracy:", accuracy)

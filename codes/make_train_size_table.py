@@ -210,7 +210,7 @@ def main() -> int:
     if not root.exists():
         raise SystemExit(f"Root not found: {root}")
 
-    dataset_filter = set(args.dataset) if args.dataset else {"asap_1", "ASAP2"}
+    dataset_filter = set(args.dataset) if args.dataset else {"asap_1", "ASAP2", "ets3"}
     train_sizes = sorted(args.train_sizes)
 
     # Collect data: data[dataset][model][train_size] = qwk

@@ -163,6 +163,9 @@ def quality_to_score_for_qwk(quality, dataset='ets'):
         return None
 
 def parse_new_rubric(response):
+    if not isinstance(response, str):
+        print(f"Invalid rubric evolution response: {response!r}")
+        return None
     response = response.replace('```markdown\n', '```\n')
     pattern = r'```(.*?)```'
     match = re.search(pattern, response, re.DOTALL)
@@ -184,6 +187,7 @@ def parse_new_rubric(response):
                 return all_matches[-1].strip()
         else:
             return None
+    return None
 
 
 def calculate_accuracy(model_responses, batch, dataset='ets'):
@@ -495,11 +499,15 @@ async def main(args):
                         examples=examples_str
                     )
                 # print(prompt_for_evolution)
-                evolution_response = await get_llm_response_async(
-                    [{"role": "user", "content": prompt_for_evolution}],
-                    model_name,
-                    params
-                )
+                try:
+                    evolution_response = await get_llm_response_async(
+                        [{"role": "user", "content": prompt_for_evolution}],
+                        model_name,
+                        params
+                    )
+                except Exception as exc:
+                    print(f"Rubric evolution request failed: {type(exc).__name__}: {exc}")
+                    return None
                 new_rubric = parse_new_rubric(evolution_response)
                 if new_rubric is None:
                     print("No new rubric proposed")
@@ -515,8 +523,15 @@ async def main(args):
                 return new_rubric
 
             batch_tasks = [evolve_for_batch(batch_size) for batch_size in batch_sizes]
-            batch_results = await asyncio.gather(*batch_tasks)
-            return [result for result in batch_results if result is not None]
+            batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)
+            valid_results = []
+            for result in batch_results:
+                if isinstance(result, Exception):
+                    print(f"Rubric evolution batch failed: {type(result).__name__}: {result}")
+                    continue
+                if result is not None:
+                    valid_results.append(result)
+            return valid_results
 
         evolved_count = 0
         if args.model_name.startswith('openai/') or args.model_name.startswith('google/'):
@@ -530,11 +545,15 @@ async def main(args):
             print(len(evolve_tasks), "evolution tasks to execute.")
             for i in range(0, len(evolve_tasks), 4):
                 batch_tasks = evolve_tasks[i:i+4]
-                batch_results = await asyncio.gather(*batch_tasks)
-                evolve_results.extend(batch_results)
+                batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)
+                for result in batch_results:
+                    if isinstance(result, Exception):
+                        print(f"Rubric evolution candidate failed: {type(result).__name__}: {result}")
+                        continue
+                    evolve_results.append(result)
             print(len(evolve_results), "evolution results obtained.")
             for result_list in evolve_results:
-                if len(result_list) > 0:
+                if result_list is not None and len(result_list) > 0:
                     rubric_candidates.extend(result_list)
                     evolved_count += len(result_list)
         else:
@@ -542,7 +561,7 @@ async def main(args):
                 for k_idx, (candidate_rubric, _, _) in enumerate(top_k_candidates):
                     # execute in sequence to avoid rate limits
                     evolve_result = await evolve_rubrics_for_candidate(step, mc_idx, k_idx, candidate_rubric)
-                    if len(evolve_result) > 0:
+                    if evolve_result is not None and len(evolve_result) > 0:
                         rubric_candidates.extend(evolve_result)
                         evolved_count += len(evolve_result)
                 
