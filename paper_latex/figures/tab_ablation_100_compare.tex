@@ -1,0 +1,73 @@
+\begin{table}[t]
+\centering
+\small
+\caption{Ablation study on ASAP 2.0.}
+\begin{tabular}{llr}
+\toprule
+LLM & Method & QWK \\
+\midrule
+Gemini 3 Flash & w/o Iteration ($T=1$) & \underline{0.616} \\
+Gemini 3 Flash & w/o Rationale & \textbf{0.665} \\
+\midrule
+GPT-5 mini & w/o Iteration ($T=1$) & \underline{0.325} \\
+GPT-5 mini & w/o Rationale & \textbf{0.527} \\
+\midrule
+Qwen3-80B-A3B & w/o Iteration ($T=1$) & \underline{0.522} \\
+Qwen3-80B-A3B & w/o Rationale & \textbf{0.561} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\small
+\caption{Ablation study on ASAP.}
+\begin{tabular}{llr}
+\toprule
+LLM & Method & QWK \\
+\midrule
+Gemini 3 Flash & w/o Iteration ($T=1$) & \textbf{0.676} \\
+Gemini 3 Flash & w/o Rationale & \underline{0.533} \\
+\midrule
+GPT-5 mini & w/o Iteration ($T=1$) & \underline{0.373} \\
+GPT-5 mini & w/o Rationale & \textbf{0.478} \\
+\midrule
+Qwen3-80B-A3B & w/o Iteration ($T=1$) & \textbf{0.465} \\
+Qwen3-80B-A3B & w/o Rationale & \underline{0.433} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\small
+\caption{Ablation study on TOEFL11.}
+\begin{tabular}{llr}
+\toprule
+LLM & Method & QWK \\
+\midrule
+Gemini 3 Flash & w/o Iteration ($T=1$) & \underline{0.492} \\
+Gemini 3 Flash & w/o Rationale & \textbf{0.544} \\
+\midrule
+GPT-5 mini & w/o Iteration ($T=1$) & \textbf{0.554} \\
+GPT-5 mini & w/o Rationale & \underline{0.539} \\
+\midrule
+Qwen3-80B-A3B & w/o Iteration ($T=1$) & \underline{0.419} \\
+Qwen3-80B-A3B & w/o Rationale & \textbf{0.432} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\small
+\caption{Ablation study averaged across datasets and LLMs.}
+\begin{tabular}{lr}
+\toprule
+Method & QWK \\
+\midrule
+w/o Iteration ($T=1$) & \underline{0.494} \\
+w/o Rationale & \textbf{0.524} \\
+\bottomrule
+\end{tabular}
+\end{table}

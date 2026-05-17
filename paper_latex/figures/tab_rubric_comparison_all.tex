@@ -1,0 +1,24 @@
+\begin{table}[t]
+\centering
+\small
+\caption{QWK comparison: rubrics refined from the simplest seed (``Based on the response's content, rate the response on a scale of 1 to 6.'') vs.\ the rubric written by human experts. $\Delta$ denotes QWK improvement over the baseline using human expert rubrics.}
+\label{tab:simplest}
+\begin{tabular}{llrr}
+\toprule
+\textbf{Dataset} & \textbf{LLM} & \textbf{Simplest} & \textbf{$\Delta$ vs.\ Expert} \\
+ & & \textbf{+ Ours} & \textbf{Rubric} \\
+\midrule
+ASAP & GPT-5 mini & 0.405 & +0.286 \\
+ & Gemini 3 Flash & 0.642 & +0.162 \\
+ & Qwen3-80B-A3B & 0.237 & +0.140 \\
+\midrule
+ASAP 2.0 & GPT-5 mini & 0.412 & +0.125 \\
+ & Gemini 3 Flash & 0.632 & +0.014 \\
+ & Qwen3-80B-A3B & 0.553 & +0.009 \\
+\midrule
+TOEFL11 & GPT-5 mini & 0.526 & +0.001 \\
+ & Gemini 3 Flash & 0.604 & $-$0.027 \\
+ & Qwen3-80B-A3B & 0.587 & +0.162 \\
+\bottomrule
+\end{tabular}
+\end{table}

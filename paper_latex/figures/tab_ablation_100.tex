@@ -1,0 +1,93 @@
+\begin{table}[t]
+\centering
+\small
+\caption{Ablation study on ASAP 2.0.}
+\begin{tabular}{llr}
+\toprule
+LLM & Method & QWK \\
+\midrule
+Gemini 3 Flash & Ours & \textbf{0.700} \\
+Gemini 3 Flash & w/o Iteration ($T=1$) & 0.616 \\
+Gemini 3 Flash & w/o Rationale & \underline{0.665} \\
+Gemini 3 Flash & w/o Rationale, Iteration & 0.646 \\
+\midrule
+GPT-5 mini & Ours & \textbf{0.537} \\
+GPT-5 mini & w/o Iteration ($T=1$) & 0.325 \\
+GPT-5 mini & w/o Rationale & \underline{0.527} \\
+GPT-5 mini & w/o Rationale, Iteration & 0.338 \\
+\midrule
+Qwen3-80B-A3B & Ours & \textbf{0.636} \\
+Qwen3-80B-A3B & w/o Iteration ($T=1$) & 0.522 \\
+Qwen3-80B-A3B & w/o Rationale & 0.561 \\
+Qwen3-80B-A3B & w/o Rationale, Iteration & \underline{0.595} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\small
+\caption{Ablation study on ASAP.}
+\begin{tabular}{llr}
+\toprule
+LLM & Method & QWK \\
+\midrule
+Gemini 3 Flash & Ours & \underline{0.646} \\
+Gemini 3 Flash & w/o Iteration ($T=1$) & \textbf{0.676} \\
+Gemini 3 Flash & w/o Rationale & 0.533 \\
+Gemini 3 Flash & w/o Rationale, Iteration & 0.489 \\
+\midrule
+GPT-5 mini & Ours & \textbf{0.480} \\
+GPT-5 mini & w/o Iteration ($T=1$) & 0.373 \\
+GPT-5 mini & w/o Rationale & \underline{0.478} \\
+GPT-5 mini & w/o Rationale, Iteration & 0.390 \\
+\midrule
+Qwen3-80B-A3B & Ours & \textbf{0.473} \\
+Qwen3-80B-A3B & w/o Iteration ($T=1$) & \underline{0.465} \\
+Qwen3-80B-A3B & w/o Rationale & 0.433 \\
+Qwen3-80B-A3B & w/o Rationale, Iteration & 0.240 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\small
+\caption{Ablation study on TOEFL11.}
+\begin{tabular}{llr}
+\toprule
+LLM & Method & QWK \\
+\midrule
+Gemini 3 Flash & Ours & \textbf{0.557} \\
+Gemini 3 Flash & w/o Iteration ($T=1$) & 0.492 \\
+Gemini 3 Flash & w/o Rationale & \underline{0.544} \\
+Gemini 3 Flash & w/o Rationale, Iteration & 0.510 \\
+\midrule
+GPT-5 mini & Ours & 0.348 \\
+GPT-5 mini & w/o Iteration ($T=1$) & \textbf{0.554} \\
+GPT-5 mini & w/o Rationale & \underline{0.539} \\
+GPT-5 mini & w/o Rationale, Iteration & \underline{0.539} \\
+\midrule
+Qwen3-80B-A3B & Ours & \underline{0.452} \\
+Qwen3-80B-A3B & w/o Iteration ($T=1$) & 0.419 \\
+Qwen3-80B-A3B & w/o Rationale & 0.432 \\
+Qwen3-80B-A3B & w/o Rationale, Iteration & \textbf{0.456} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\small
+\caption{Ablation study averaged across datasets and LLMs.}
+\begin{tabular}{lr}
+\toprule
+Method & QWK \\
+\midrule
+Ours & \textbf{0.536} \\
+w/o Iteration ($T=1$) & 0.494 \\
+w/o Rationale & \underline{0.524} \\
+w/o Rationale, Iteration & 0.467 \\
+\bottomrule
+\end{tabular}
+\end{table}
