@@ -9,8 +9,8 @@ from agent_prompts import EVALUATION_PROMPT, PROMPT_FOR_EVOLUTION_WITH_RATIONALE
 from utils import prepare_ets_dataset, prepare_asap_dataset, prepare_asap2_dataset
 from sklearn.metrics import cohen_kappa_score
 import shutil
-ASYNC_BATCH_SIZE = int(os.getenv("ASYNC_BATCH_SIZE", "100"))
-ASYNC_CONCURRENCY = int(os.getenv("ASYNC_CONCURRENCY", "40"))
+ASYNC_BATCH_SIZE = int(os.getenv("ASYNC_BATCH_SIZE", "20"))
+ASYNC_CONCURRENCY = int(os.getenv("ASYNC_CONCURRENCY", "5"))
 
 def parse_rating(response):
     # Find the substring after 'Rating:' and then extract all numbers from it

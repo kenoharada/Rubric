@@ -12,7 +12,7 @@ METHOD_LABELS = {
     "zero_shot_base_expert_True_train100_iteration5_top3_bs4-8-12_mc4": "Ours",
     "zero_shot_base_expert_True_train100_iteration1_top3_bs4-8-12_mc4": "w/o Iteration ($T=1$)",
     "zero_shot_base_expert_False_train100_iteration5_top3_bs4-8-12_mc4": "w/o Rationale",
-    # "zero_shot_base_expert_False_train100_iteration1_top3_bs4-8-12_mc4": "w/o Rationale, Iteration", # AutoCalibrate
+    "zero_shot_base_expert_False_train100_iteration1_top3_bs4-8-12_mc4": "w/o Rationale, Iteration", # AutoCalibrate
 }
 
 MODEL_LABELS = {
@@ -28,6 +28,12 @@ DATASET_LABELS = {
 }
 
 KNOWN_VENDORS = ("openai", "google", "qwen")
+
+MetricValues = Dict[str, Optional[float]]
+BestSecond = Dict[str, Tuple[Optional[float], Optional[float]]]
+TableRow = Tuple[str, str, MetricValues, BestSecond]
+MethodAverageRow = Tuple[str, MetricValues, BestSecond]
+GroupedMetrics = Dict[str, Dict[str, Dict[str, MetricValues]]]
 
 
 def restore_model_name(model_dir_name: str) -> str:
@@ -193,31 +199,78 @@ def best_and_second_by_direction(
     return present[0], present[1]
 
 
+def average_present(values: Iterable[Optional[float]]) -> Optional[float]:
+    present = [value for value in values if value is not None]
+    if not present:
+        return None
+    return sum(present) / len(present)
+
+
+def metric_label(metric: str) -> str:
+    labels = {
+        "qwk": "QWK",
+        "accuracy": "Acc.",
+        "spearman": "Spearman",
+        "f1_macro": "Macro-F1",
+        "mae": "MAE",
+    }
+    return labels[metric]
+
+
+def build_method_average_rows(
+    complete_grouped: GroupedMetrics,
+    required_runs: List[str],
+    metrics: List[str],
+    metric_directions: Dict[str, bool],
+) -> List[MethodAverageRow]:
+    runs_for_all_settings = [
+        runs
+        for dataset_runs in complete_grouped.values()
+        for runs in dataset_runs.values()
+    ]
+    if not runs_for_all_settings:
+        return []
+
+    averaged_runs: Dict[str, MetricValues] = {}
+    for run_name in required_runs:
+        averaged_runs[run_name] = {
+            metric: average_present(
+                runs_for_setting[run_name].get(metric)
+                for runs_for_setting in runs_for_all_settings
+            )
+            for metric in metrics
+        }
+
+    best_second: BestSecond = {}
+    for metric in metrics:
+        values = [averaged_runs[r].get(metric) for r in required_runs]
+        higher_is_better = metric_directions.get(metric, True)
+        best_second[metric] = best_and_second_by_direction(values, higher_is_better)
+
+    return [
+        (METHOD_LABELS[run_name], averaged_runs[run_name], dict(best_second))
+        for run_name in required_runs
+    ]
+
+
 def build_table(
-    rows: List[Tuple[str, str, Dict[str, Optional[float]], Dict[str, Tuple[Optional[float], Optional[float]]]]],
+    rows: List[TableRow],
     dataset: str,
     metrics: List[str],
+    caption: Optional[str] = None,
 ) -> str:
     lines = []
     lines.append("\\begin{table}[t]")
     lines.append("\\centering")
     lines.append("\\small")
     display_dataset = DATASET_LABELS.get(dataset, dataset)
-    lines.append(f"\\caption{{Ablation study on {display_dataset}.}}")
+    if caption is None:
+        caption = f"Ablation study on {display_dataset}."
+    lines.append(f"\\caption{{{caption}}}")
     col_spec = "ll" + ("r" * len(metrics))
     lines.append(f"\\begin{{tabular}}{{{col_spec}}}")
     lines.append("\\toprule")
-    header = ["LLM", "Method"]
-    if "qwk" in metrics:
-        header.append("QWK")
-    if "accuracy" in metrics:
-        header.append("Acc.")
-    if "spearman" in metrics:
-        header.append("Spearman")
-    if "f1_macro" in metrics:
-        header.append("Macro-F1")
-    if "mae" in metrics:
-        header.append("MAE")
+    header = ["LLM", "Method"] + [metric_label(metric) for metric in metrics]
     lines.append(" & ".join(header) + " \\\\")
     lines.append("\\midrule")
     last_model_name = None
@@ -227,6 +280,34 @@ def build_table(
         last_model_name = model_name
         display_model = MODEL_LABELS.get(model_name, model_name)
         row_cells = [display_model, method_label]
+        for metric in metrics:
+            value = metric_values.get(metric)
+            best, second = best_second.get(metric, (None, None))
+            row_cells.append(highlight_score(value, best, second))
+        lines.append(" & ".join(row_cells) + " \\\\")
+    lines.append("\\bottomrule")
+    lines.append("\\end{tabular}")
+    lines.append("\\end{table}")
+    return "\n".join(lines)
+
+
+def build_method_average_table(
+    rows: List[MethodAverageRow],
+    metrics: List[str],
+) -> str:
+    lines = []
+    lines.append("\\begin{table}[t]")
+    lines.append("\\centering")
+    lines.append("\\small")
+    lines.append("\\caption{Ablation study averaged across datasets and LLMs.}")
+    col_spec = "l" + ("r" * len(metrics))
+    lines.append(f"\\begin{{tabular}}{{{col_spec}}}")
+    lines.append("\\toprule")
+    header = ["Method"] + [metric_label(metric) for metric in metrics]
+    lines.append(" & ".join(header) + " \\\\")
+    lines.append("\\midrule")
+    for method_label, metric_values, best_second in rows:
+        row_cells = [method_label]
         for metric in metrics:
             value = metric_values.get(metric)
             best, second = best_second.get(metric, (None, None))
@@ -255,7 +336,7 @@ def main() -> int:
         raise SystemExit(f"Root not found: {root}")
 
     dataset_filter = set(args.dataset or ["asap_1", "ets3", "ASAP2"])
-    grouped: Dict[str, Dict[str, Dict[str, Dict[str, Optional[float]]]]] = {}
+    grouped: GroupedMetrics = {}
     required_runs = list(METHOD_LABELS.keys())
     metrics = [m.strip().lower() for m in args.metrics.split(",") if m.strip()]
     allowed_metrics = {"accuracy", "qwk", "spearman", "f1_macro", "mae"}
@@ -293,17 +374,17 @@ def main() -> int:
         raise SystemExit("No runs found.")
 
     tables = []
+    complete_grouped: GroupedMetrics = {}
     for dataset in sorted(grouped.keys()):
-        rows_for_dataset: List[
-            Tuple[str, str, Dict[str, Optional[float]], Dict[str, Tuple[Optional[float], Optional[float]]]]
-        ] = []
+        rows_for_dataset: List[TableRow] = []
         for model_name in sorted(grouped[dataset].keys()):
             runs = grouped[dataset][model_name]
             if any(r not in runs for r in required_runs):
                 missing = [r for r in required_runs if r not in runs]
                 print(f"  Skipping {model_name} for {dataset}: missing {missing}")
                 continue
-            best_second: Dict[str, Tuple[Optional[float], Optional[float]]] = {}
+            complete_grouped.setdefault(dataset, {})[model_name] = runs
+            best_second: BestSecond = {}
             for metric in metrics:
                 values = [runs[r].get(metric) for r in required_runs]
                 higher_is_better = metric_directions.get(metric, True)
@@ -318,6 +399,16 @@ def main() -> int:
 
     if not tables:
         raise SystemExit("No runs found after filtering for required methods.")
+
+    average_rows = build_method_average_rows(
+        complete_grouped,
+        required_runs,
+        metrics,
+        metric_directions,
+    )
+    if average_rows:
+        tables.append(build_method_average_table(average_rows, metrics))
+
     output_text = "\n\n".join(tables) + "\n"
     if args.output:
         Path(args.output).write_text(output_text)

@@ -150,7 +150,12 @@ async def main(args):
             evaluation_prompt, args.dataset)
     
     results = []
-    for model_response, data in zip(model_responses, test_data):
+    skipped_count = 0
+    for idx, (model_response, data) in enumerate(zip(model_responses, test_data)):
+        if isinstance(model_response, BaseException):
+            skipped_count += 1
+            print(f"Skipping failed response at index {idx}: {type(model_response).__name__}: {model_response}")
+            continue
         essay_prompt, essay_response, annotated_score = data['essay_prompt'], data['response'], data['answer']
         save_dict = {
             'essay_prompt': essay_prompt,
@@ -159,6 +164,8 @@ async def main(args):
             'model_response': model_response
         }
         results.append(save_dict)
+    if skipped_count > 0:
+        print(f"Skipped {skipped_count} failed responses when saving results.")
     # save results
     import json
     with open(os.path.join(result_dir, 'results.jsonl'), 'w') as f:

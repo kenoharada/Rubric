@@ -67,7 +67,7 @@ def prepare_ets_dataset():
             "answer": quality
         })
     random.shuffle(test_data)
-    return train_data, val_data, test_data
+    return train_data, val_data, test_data[:100] # use 100 samples for test
 
 
 
@@ -107,7 +107,7 @@ def prepare_asap_dataset(essay_set=1):
     val_data = data_for_experiment[train_end:val_end]
     test_data = data_for_experiment[val_end:]
 
-    return train_data, val_data, test_data
+    return train_data, val_data, test_data[:100]  # use 100 samples for test
 
 
 def prepare_asap2_dataset(essay_set=1):
@@ -155,7 +155,7 @@ def prepare_asap2_dataset(essay_set=1):
     val_data = data_for_experiment[train_end:val_end]
     test_data = data_for_experiment[val_end:]
 
-    return train_data, val_data, test_data
+    return train_data, val_data, test_data[:100]  # use 100 samples for test
 
 
 if __name__ == "__main__":
