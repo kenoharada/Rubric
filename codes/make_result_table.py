@@ -188,7 +188,7 @@ def iter_runs(root: Path) -> Iterable[Tuple[str, str, str, Path]]:
 def format_float(value: Optional[float]) -> str:
     if value is None:
         return "--"
-    return f"{value:.3f}"
+    return f"{value:.5f}"
 
 
 def highlight_score(value: Optional[float], best: Optional[float], second: Optional[float]) -> str:
