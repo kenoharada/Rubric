@@ -4,21 +4,21 @@
 \toprule
 Dataset & Model & Seed & Refined & $\Delta$\,Words & Overlap (\%) & $\Delta$\,QWK \\
 \midrule
-  ASAP & Gemini 3 Flash & 352 & 920 & +568 & 19.8 & +0.219 \\
-  ASAP & GPT-5 mini & 352 & 1,696 & +1,344 & 5.1 & +0.438 \\
-  ASAP & Qwen3-80B-A3B & 352 & 1,925 & +1,573 & 12.3 & +0.352 \\
+  ASAP & Gemini 3 Flash & 352 & 920 & +568 & 19.8 & +0.132 \\
+  ASAP & GPT-5 mini & 352 & 1,696 & +1,344 & 5.1 & +0.403 \\
+  ASAP & Qwen3-80B-A3B & 352 & 1,925 & +1,573 & 12.3 & +0.383 \\
 \midrule
-  ASAP 2.0 & Gemini 3 Flash & 688 & 624 & -64 & 41.0 & +0.087 \\
-  ASAP 2.0 & GPT-5 mini & 688 & 1,632 & +944 & 1.1 & +0.179 \\
-  ASAP 2.0 & Qwen3-80B-A3B & 688 & 1,758 & +1,070 & 38.5 & +0.061 \\
+  ASAP 2.0 & Gemini 3 Flash & 688 & 624 & -64 & 41.0 & +0.107 \\
+  ASAP 2.0 & GPT-5 mini & 688 & 1,632 & +944 & 1.1 & +0.187 \\
+  ASAP 2.0 & Qwen3-80B-A3B & 688 & 1,758 & +1,070 & 38.5 & +0.078 \\
 \midrule
-  TOEFL11 & Gemini 3 Flash & 250 & 430 & +180 & 30.9 & -0.018 \\
-  TOEFL11 & GPT-5 mini & 250 & 2,384 & +2,134 & 3.3 & -0.099 \\
-  TOEFL11 & Qwen3-80B-A3B & 250 & 637 & +387 & 18.8 & +0.088 \\
+  TOEFL11 & Gemini 3 Flash & 250 & 430 & +180 & 30.9 & +0.002 \\
+  TOEFL11 & GPT-5 mini & 250 & 2,384 & +2,134 & 3.3 & -0.019 \\
+  TOEFL11 & Qwen3-80B-A3B & 250 & 637 & +387 & 18.8 & +0.148 \\
 \midrule
-  \multicolumn{2}{l}{\textbf{Average}} & 430 & 1,334 & +904 & 19.0 & +0.145 \\
+  \multicolumn{2}{l}{\textbf{Average}} & 430 & 1,334 & +904 & 19.0 & +0.158 \\
 \bottomrule
 \end{tabular}
-\caption{Quantitative comparison between seed and refined rubrics. The \textit{Seed} rubric is the human-authored rubric used as the starting point for optimization; \textit{Refined} is the rubric after iterative refinement. Word counts are shown for each, with \textit{$\Delta$\,Words} indicating the change. \textit{Overlap} is the percentage of refined rubric words that also appear in the seed rubric (order-preserving longest common subsequence). $\Delta$\,QWK is the improvement in test-set Quadratic Weighted Kappa after refinement.}
+\caption{Quantitative comparison between seed and refined rubrics. The \textit{Seed} rubric is the human-authored rubric used as the starting point for optimization; \textit{Refined} is the rubric after iterative refinement. Word counts are shown for each, with \textit{$\Delta$\,Words} indicating the change. \textit{Overlap} is the percentage of refined rubric words that also appear in the seed rubric (order-preserving longest common subsequence). $\Delta$\,QWK is the improvement in test-set Quadratic Weighted Kappa after refinement (Refined $-$ Seed).}
 \label{tab:rubric_comparison}
 \end{table*}
